@@ -4,7 +4,7 @@
 
 Status: `ACTIVE`
 
-AI tworzy kandydatów i analizy. Nie zatwierdza, nie commituję i nie zmienia samodzielnie kanonu.
+AI tworzy kandydatów i analizy. Nie zatwierdza, nie commituje i nie zmienia samodzielnie kanonu.
 
 ## DEC-SO-002 — lokalne źródło prawdy
 
