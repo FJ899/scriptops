@@ -1,0 +1,200 @@
+            target_path = PROJECT_ROOT / "scenes" / f"{scene_id}.fountain"
+        else:
+            target_path = PROJECT_ROOT / "staging" / "scenes" / f"{scene_id}-v{fm['version']}-{target_status}.fountain"
+
+        fm_copy = {k: v for k, v in fm.items() if k != "hash"}
+        canonical = yaml_dump(fm_copy, sort_keys=False) + body
+        fm["hash"] = compute_sha256(canonical)
+
+        text = "---\n" + yaml_dump(fm, sort_keys=False) + "---" + body
+        target_path.write_text(text, encoding="utf-8")
+        if target_path != scene_path:
+            scene_path.unlink()
+    else:
+        fm_copy = {k: v for k, v in fm.items() if k != "hash"}
+        canonical = yaml_dump(fm_copy, sort_keys=False) + body
+        fm["hash"] = compute_sha256(canonical)
+        text = "---\n" + yaml_dump(fm, sort_keys=False) + "---" + body
+        scene_path.write_text(text, encoding="utf-8")
+
+    subprocess.run(["git", "add", "."], cwd=PROJECT_ROOT, capture_output=True)
+    subprocess.run(["git", "commit", "-m", f"scriptops: promote {scene_id} {current}->{target_status}"], cwd=PROJECT_ROOT, capture_output=True)
+    print(f"Promoted {scene_id}: {current} -> {target_status}")
+
+def cmd_continuity_compile(args):
+    ensure_git_clean()
+    scene_id = args.scene
+
+    log_path = SCRIPTOPS_DIR / "decision-log.ndjson"
+    if not log_path.exists():
+        print("WARNING: No decision log found.")
+        return
+
+    decisions = []
+    with log_path.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                decisions.append(json.loads(line))
+
+    active = [d for d in decisions if d.get("status") == "active" and (scene_id in d.get("scope", []) or any(scene_id in str(s) for s in d.get("scope", [])))]
+
+    scene_path = PROJECT_ROOT / "scenes" / f"{scene_id}.fountain"
+    if not scene_path.exists():
+        candidates = list((PROJECT_ROOT / "staging" / "scenes").glob(f"{scene_id}-*.fountain"))
+        if candidates:
+            scene_path = sorted(candidates)[-1]
+        else:
+            print(f"FATAL: Scene {scene_id} not found.", file=sys.stderr)
+            sys.exit(1)
+
+    fm, body = parse_front_matter(scene_path)
+    fm["continuity_constraints"] = [d["text"] for d in active]
+
+    fm_copy = {k: v for k, v in fm.items() if k != "hash"}
+    canonical = yaml_dump(fm_copy, sort_keys=False) + body
+    fm["hash"] = compute_sha256(canonical)
+    text = "---\n" + yaml_dump(fm, sort_keys=False) + "---" + body
+    scene_path.write_text(text, encoding="utf-8")
+
+    compile_log = SCRIPTOPS_DIR / "continuity-log.ndjson"
+    with compile_log.open("a", encoding="utf-8") as f:
+        f.write(json.dumps({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "scene_id": scene_id,
+            "compiled_from": [d["id"] for d in active],
+            "constraints_count": len(active)
+        }, ensure_ascii=False) + "\n")
+
+    subprocess.run(["git", "add", "."], cwd=PROJECT_ROOT, capture_output=True)
+    subprocess.run(["git", "commit", "-m", f"scriptops: compile continuity for {scene_id}"], cwd=PROJECT_ROOT, capture_output=True)
+    print(f"Compiled {len(active)} continuity constraints for {scene_id}")
+    for d in active:
+        print(f"  - [{d['id']}] {d['text'][:80]}...")
+
+def cmd_context_build(args):
+    builder = ContextBuilder(PROJECT_ROOT)
+    pack_path = builder.build(args.scene, args.mode, args.task)
+
+    if args.target == "clipboard":
+        text = pack_path.read_text(encoding="utf-8")
+        try:
+            import pyperclip
+            pyperclip.copy(text)
+            print(f"Context pack ({len(text)} chars, ~{len(text)//4} tokens) copied to clipboard.")
+        except ImportError:
+            print("pyperclip not installed. Install: pip install pyperclip")
+            print(f"Pack written to: {pack_path}")
+    else:
+        print(f"Context pack written to: {pack_path}")
+
+def cmd_check_pre(args):
+    config = load_config()
+    task_dir = PROJECT_ROOT / "tasks" / args.task
+    task_pack_path = task_dir / "task-pack.yaml"
+
+    if not task_pack_path.exists():
+        print(f"FATAL: Task pack not found: {task_pack_path}", file=sys.stderr)
+        sys.exit(1)
+
+    report = {"task_id": args.task, "phase": "pre-ai", "timestamp": datetime.now(timezone.utc).isoformat(), "checks": [], "verdict": "PASS"}
+
+    # Check 1: Git clean
+    if not git_is_clean():
+        report["checks"].append({"name": "git_clean", "status": "FAIL", "message": "Git working tree dirty"})
+        report["verdict"] = "FAIL"
+    else:
+        report["checks"].append({"name": "git_clean", "status": "PASS"})
+
+    # Check 2: Task pack parseable
+    try:
+        task_pack = yaml_load(task_pack_path.read_text(encoding="utf-8"))
+        report["checks"].append({"name": "task_pack_parseable", "status": "PASS"})
+    except Exception as e:
+        report["checks"].append({"name": "task_pack_parseable", "status": "FAIL", "message": str(e)})
+        report["verdict"] = "FAIL"
+        task_pack = {}
+
+    # Check 3: Scene exists
+    scene_id = task_pack.get("scene_id", "")
+    scene_paths = list(PROJECT_ROOT.glob(f"**/{scene_id}*.fountain"))
+    if not scene_paths:
+        report["checks"].append({"name": "scene_exists", "status": "FAIL", "message": f"Scene {scene_id} not found"})
+        report["verdict"] = "FAIL"
+    else:
+        report["checks"].append({"name": "scene_exists", "status": "PASS"})
+
+    # Check 4: Context files exist (simplified)
+    context_files = task_pack.get("context_files", task_pack.get("context_sources", []))
+    missing = []
+    for cf in context_files:
+        fid = cf if isinstance(cf, str) else cf.get("id", "")
+        resolved = None
+        for base in [PROJECT_ROOT / "bible", PROJECT_ROOT / "scenes", PROJECT_ROOT / "summaries", SCRIPTOPS_DIR]:
+            for ext in ["", ".md", ".yaml", ".fountain"]:
+                p = base / f"{fid}{ext}"
+                if p.exists():
+                    resolved = p
+                    break
+            if resolved:
+                break
+        if not resolved:
+            missing.append(fid)
+
+    if missing:
+        report["checks"].append({"name": "context_files_exist", "status": "FAIL", "message": f"Missing: {missing}"})
+        report["verdict"] = "FAIL"
+    else:
+        report["checks"].append({"name": "context_files_exist", "status": "PASS"})
+
+    # Check 5: Token budget
+    max_tokens = args.max_tokens or 14000
+    total_chars = len(task_pack_path.read_text(encoding="utf-8"))
+    estimated = total_chars // 4
+    if estimated > max_tokens:
+        report["checks"].append({"name": "token_budget", "status": "FAIL", "message": f"Estimated {estimated} > limit {max_tokens}"})
+        report["verdict"] = "FAIL"
+    else:
+        report["checks"].append({"name": "token_budget", "status": "PASS", "estimated": estimated, "limit": max_tokens})
+
+    report_path = task_dir / "validation-report.json"
+    report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    if report["verdict"] == "PASS":
+        prompt_ready = task_dir / "prompt-ready.md"
+        prompt_ready.write_text(f"# PROMPT READY\n\nTask: {args.task}\nAll pre-flight checks passed.\nRun: scriptops context-build --scene {scene_id} --mode {task_pack.get('mode', 'write-scene')} --task {args.task}\n", encoding="utf-8")
+        print(f"[PASS] Pre-AI validation passed. Prompt ready: {prompt_ready}")
+    else:
+        print(f"[FAIL] Pre-AI validation failed. See: {report_path}")
+        for c in report["checks"]:
+            if c["status"] == "FAIL":
+                print(f"  FAIL: {c['name']} — {c.get('message', '')}")
+        sys.exit(1)
+
+def cmd_check_post(args):
+    config = load_config()
+    task_dir = PROJECT_ROOT / "tasks" / args.task
+    output_path = task_dir / (args.source or "webai-output.md")
+
+    if not output_path.exists():
+        print(f"FATAL: Output not found: {output_path}", file=sys.stderr)
+        sys.exit(1)
+
+    report = {"task_id": args.task, "phase": "post-ai", "timestamp": datetime.now(timezone.utc).isoformat(), "checks": [], "verdict": "PASS"}
+
+    text = output_path.read_text(encoding="utf-8")
+
+    # Check 1: YAML front matter
+    if not text.startswith("---"):
+        report["checks"].append({"name": "yaml_front_matter", "status": "FAIL", "message": "Missing YAML front matter"})
+        report["verdict"] = "FAIL"
+        fm = {}
+        body = text
+    else:
+        try:
+            parts = text.split("---", 2)
+            if len(parts) >= 3:
+                fm = yaml_load(parts[1])
+                body = parts[2]
+            else:
+                fm = {}
