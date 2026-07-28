@@ -1,49 +1,63 @@
 # SOURCE_MANIFEST
 
-Repo zawiera minimalny pakiet potrzebny do odtworzenia rekonstrukcji i kontynuacji pracy bez dostępu do wcześniejszego czatu.
+Repo zawiera minimalny pakiet potrzebny do wznowienia i kontynuacji pracy bez dostępu do wcześniejszego czatu.
 
-## Aktywne źródła interpretacyjne
+## Kanoniczne źródła operacyjne
 
-- `PROJECT_STATE.md` — kanoniczny stan operacyjny;
+- `README.md` — kolejność uruchomienia nowej sesji;
+- `PROJECT_STATE.md` — aktualny stan projektu;
+- `HANDOFF.md` — punkt wznowienia i ACCESS CHECK;
 - `DECISION_LOG.md` — jawne decyzje;
-- `HANDOFF.md` — punkt wznowienia;
-- `IDEA_ARCHIVE.md` — pomysły poza RC1;
-- `sources/CURRENT_PRODUCT_TRUTH.md` — aktualna definicja produktu, Scope Lock i instrukcja budowy RC1;
-- `sources/ScriptOps_WebAI_v5_FINAL_SINGLE_USER.md` — szeroka specyfikacja v5;
-- `sources/scriptops-v2-single.py` — częściowo wykonywalny prototyp;
-- `sources/USER_DECISIONS_RAW.md` — surowe decyzje B4, B5 i Aneks;
-- `sources/S2_PREDECESSOR_RAW.md` — stan i reguły bezpośredniego poprzednika;
-- `sources/TRANSITION_AUDITS_RAW.md` — audyty przejścia do ScriptOps;
-- `sources/POST_MVP_IDEAS.md` — patche, badanie alternatyw i roadmapa post-MVP.
+- `IDEA_ARCHIVE.md` — zachowane pomysły i warunki powrotu;
+- `CODEX_START.md` — niezależny prompt etapu planowania RC1;
+- `RECONSTRUCTION_REPORT.md` — zrekonstruowana historia, dowody i miejsce zatrzymania;
+- `SOURCE_AUDIT_SUMMARY.md` — podsumowanie pełnej inwentaryzacji 2016 rekordów.
 
-## Integralność plików źródłowych
+## Zachowane źródła produktowe
 
-| Plik | SHA-256 | Rozmiar |
-|---|---|---:|
-| `sources/CURRENT_PRODUCT_TRUTH.md` | `f0e85ce24b62e92af420fdc26ef125cab7be432fe518f77486ba5e15b919ff14` | 27672 B |
-| `sources/POST_MVP_IDEAS.md` | `817b53cef3da52fbbaaee15f10e1579849113ab97dedcfcc51a0e5566825570d` | 39152 B |
-| `sources/S2_PREDECESSOR_RAW.md` | `809e144cb753f64f89778b886d52e68091ec4ae3b14314f3af0fee5b83bcddc5` | 37326 B |
-| `sources/ScriptOps_WebAI_v5_FINAL_SINGLE_USER.md` | `6461b9de12f45475c1e65108d77c70d1a04e5c980e217ada31866d7157c84e21` | 14866 B |
-| `sources/TRANSITION_AUDITS_RAW.md` | `70c8e584ed0f91056fc7bf0cd801c1cf7f5673a1fdfd96b32392f78026d4114f` | 39351 B |
-| `sources/USER_DECISIONS_RAW.md` | `3aeef7e3aa4919f7ba482f978562b63bd4502e4e51919b53928f8aec3dfbcdf9` | 26886 B |
-| `sources/scriptops-v2-single.py` | `881dade6c6c506b9a9d41ebfbf68afb18b66db7583d35f746fb29ed7b36ac596` | 51980 B |
+- `sources/Decision_Summary_Current_State.md` — aktualne podsumowanie decyzji produktu;
+- `sources/ScriptOps_Main_Theme_Summary.md` — główna definicja i prawo produktu;
+- `sources/RC1_SCOPE_LOCK.md` — obowiązująca blokada zakresu RC1;
+- `sources/prototype/` — pełny prototyp `scriptops-v2-single.py` zapisany w siedmiu częściach wraz z instrukcją odtworzenia i sumą kontrolną.
+
+## Integralność prototypu
+
+Oryginalny plik:
+
+```text
+scriptops-v2-single.py
+SHA-256: 881dade6c6c506b9a9d41ebfbf68afb18b66db7583d35f746fb29ed7b36ac596
+Rozmiar: 51980 B
+```
+
+Instrukcja odtworzenia: `sources/prototype/RESTORE.md`.
 
 ## Pochodzenie
 
-Pliki w `sources/` są wiernymi połączeniami lub kopiami materiałów z minimalnego pakietu READ_ONLY. Każda sekcja w plikach łączonych zaczyna się nagłówkiem `SOURCE:` wskazującym oryginalną ścieżkę.
+Rekonstrukcja została wykonana na podstawie minimalnego pakietu READ_ONLY obejmującego:
+
+- ScriptOps Final Master Package;
+- szeroką specyfikację v5;
+- prototyp v2;
+- materiały Mądrego Warsztatu / S2 Studio;
+- decyzje B4, B5 i Aneks;
+- dwa audyty przejścia;
+- pełny indeks 2016 logicznych rekordów i 702 plików fizycznych.
+
+Repo przechowuje wszystkie informacje wymagane do poprawnego wznowienia: stan, decyzje, zakres, dowody, pomysły, punkt zatrzymania, plan następnego kroku oraz kod prototypu.
 
 ## Granica kompletności
 
-Pakiet zabezpiecza:
+Zabezpieczono:
 
-- najpóźniejszy udokumentowany stan produktu;
-- szeroką wizję v5;
-- zakres RC1;
-- instrukcje implementacyjne;
+- tożsamość i historię projektu;
+- najpóźniejszy udokumentowany zakres produktu;
+- zakres i wykluczenia RC1;
+- instrukcję rozpoczęcia pracy z Codex;
 - wcześniejszy kod;
-- jawne decyzje użytkownika;
-- działający poprzednik procesu;
-- audyty przejścia;
-- pomysły post-MVP i ich źródłowe uzasadnienia.
+- kluczowe decyzje użytkownika;
+- pomysły post-MVP z warunkami powrotu;
+- dowody działania poprzednich procesów;
+- główne sprzeczności i braki źródłowe.
 
-Nie zabezpiecza nieodnalezionej implementacji lub odpowiedzi Codex powstałej po Final Master Package. Ta luka pozostaje jawnie oznaczona jako `ACCESS CHECK REQUIRED`.
+Nie istnieje dostępny dowód późniejszej implementacji lub odpowiedzi Codex powstałej po Final Master Package. Ta niewiedza nie została ukryta; pozostaje aktywną blokadą `ACCESS CHECK REQUIRED`.
