@@ -1,0 +1,200 @@
+        if mode in ("write-scene", "continuity-review", "structure-review"):
+            related = []
+            for tag in scene_card.get("tags", []):
+                entries = self.scene_index.get("by_tag", {}).get(tag, [])
+                for entry in entries[:3]:
+                    if isinstance(entry, dict) and entry.get("scene_id") != scene_id:
+                        related.append(f"- {entry['scene_id']}: {entry.get('summary', '')}")
+            if related:
+                add_section("RELATED SCENES", "\n".join(related), "RELATED", "scene")
+
+        if mode in ("write-scene", "rewrite-scene", "continuity-review"):
+            constraints = "\n".join(scene_card.get("continuity_constraints", []))
+            if constraints:
+                add_section("CONTINUITY CONSTRAINTS", constraints, "CONTINUITY", "decision")
+
+        if mode == "rewrite-scene":
+            add_section("CURRENT VERSION", scene_card.get("_body", ""), f"{scene_id}-CURRENT", "scene")
+            if task_pack_path.exists():
+                tp = yaml_load(task_pack_path.read_text(encoding="utf-8"))
+                notes = tp.get("objective", "")
+                add_section("REVISION NOTES", notes, "REVISION", "task")
+
+        if mode == "dialogue-pass":
+            body = scene_card.get("_body", "")
+            dialogue_lines = []
+            for l in body.splitlines():
+                stripped = l.strip()
+                if stripped and stripped[0] in " \t" and not stripped.startswith("("):
+                    dialogue_lines.append(l)
+            add_section("CURRENT DIALOGUE", "\n".join(dialogue_lines), f"{scene_id}-DIALOGUE", "scene")
+
+        if mode == "structure-review":
+            beat_path = self.root / "outline" / "beat-sheet.md"
+            if beat_path.exists():
+                add_section("BEAT SHEET", beat_path.read_text(encoding="utf-8")[:2000], "BEATS", "outline")
+            seq_summaries = []
+            for seq_file in (self.root / "summaries").glob("sequence-*.md"):
+                seq_summaries.append(f"## {seq_file.stem}\n{seq_file.read_text(encoding='utf-8')[:500]}")
+            if seq_summaries:
+                add_section("SEQUENCE SUMMARIES", "\n\n".join(seq_summaries), "SEQUENCES", "summary")
+
+        # Output format
+        output_fmt = f"Output must follow the format specified for mode: {mode}. See ROLE INSTRUCTION for details."
+        add_section("OUTPUT FORMAT", output_fmt, f"FORMAT-{mode}", "instruction")
+
+        used = sum(s["included_tokens"] for s in sources)
+        reserve = total - used
+
+        if used > total:
+            raise ContextBudgetError(f"Context over budget: {used}/{total} tokens. Truncate or increase reserve.")
+
+        pack = {
+            "context_pack_id": f"CTX-{task_id[-4:]}-{scene_id}",
+            "task_id": task_id,
+            "scene": scene_id,
+            "mode": mode,
+            "timestamp": datetime.now().isoformat(),
+            "token_audit": {
+                "budget": total,
+                "used": used,
+                "reserve": reserve,
+                "status": "ok" if used <= total else "overflow"
+            },
+            "included_sources": sources,
+            "excluded_sources": self._list_excluded(scene_card, mode),
+            "known_gaps": []
+        }
+
+        pack_path = self.root / "tasks" / task_id / "context-pack.md"
+        pack_path.parent.mkdir(parents=True, exist_ok=True)
+
+        header = yaml_dump(pack, sort_keys=False)
+        body = "\n\n---\n\n".join(sections)
+        full = f"---\n{header}---\n\n{body}"
+
+        pack_path.write_text(full, encoding="utf-8")
+        return pack_path
+
+    def _list_excluded(self, scene_card, mode):
+        excluded = []
+        all_scenes = set(self.scene_index.get("all_scenes", []))
+        included = set(scene_card.get("depends_on", []) + scene_card.get("spoils_or_sets_up", []))
+        for sid in all_scenes - included:
+            if sid != scene_card.get("scene_id"):
+                excluded.append({"id": sid, "reason": "not_graph_adjacent", "type": "scene"})
+        return excluded[:10]
+
+class ContextBudgetError(Exception):
+    pass
+
+# ============================================================
+# COMMANDS
+# ============================================================
+
+def cmd_init(args):
+    PROJECT_ROOT.mkdir(parents=True, exist_ok=True)
+    for d in [
+        SCRIPTOPS_DIR / "prompts",
+        PROJECT_ROOT / "bible",
+        PROJECT_ROOT / "outline",
+        PROJECT_ROOT / "scenes",
+        PROJECT_ROOT / "staging" / "scenes",
+        PROJECT_ROOT / "summaries",
+        PROJECT_ROOT / "tasks"
+    ]:
+        d.mkdir(parents=True, exist_ok=True)
+
+    CONFIG_PATH.write_text(DEFAULT_CONFIG, encoding="utf-8")
+
+    # Write embedded prompts
+    for name, content in PROMPTS.items():
+        prompt_path = SCRIPTOPS_DIR / "prompts" / f"{name}.prompt"
+        prompt_path.write_text(content, encoding="utf-8")
+
+    # Write schemas
+    (SCRIPTOPS_DIR / "scene-schema.json").write_text(json.dumps(SCENE_SCHEMA, indent=2, ensure_ascii=False), encoding="utf-8")
+    (SCRIPTOPS_DIR / "task-schema.json").write_text(json.dumps(TASK_SCHEMA, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    subprocess.run(["git", "init"], cwd=PROJECT_ROOT, capture_output=True)
+    subprocess.run(["git", "add", "."], cwd=PROJECT_ROOT, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "scriptops v2: init project"], cwd=PROJECT_ROOT, capture_output=True)
+    print(f"Initialized ScriptOps v2 project: {args.name}")
+    print("Next steps:")
+    print("  1. Fill bible/characters.yaml")
+    print("  2. Create outline/acts.yaml and outline/beat-sheet.md")
+    print("  3. Run: scriptops scene-new --id SCN-001")
+
+def cmd_check(args):
+    ensure_git_clean()
+    print("[OK] Git working tree clean.")
+    print("[OK] Config loaded.")
+    print("[OK] Registry index conceptually valid (rebuild on demand).")
+    print("[INFO] Run `scriptops validate --scene <id>` for per-scene checks.")
+
+def cmd_scene_new(args):
+    ensure_git_clean()
+    scene_id = args.id
+    scene_path = PROJECT_ROOT / "scenes" / f"{scene_id}.fountain"
+    if scene_path.exists():
+        print(f"FATAL: Scene {scene_id} already exists.", file=sys.stderr)
+        sys.exit(1)
+
+    template = f"""---
+scene_id: {scene_id}
+version: 1
+status: idea
+hash: PLACEHOLDER
+title: ""
+act: 1
+sequence: ""
+location: ""
+time: ""
+characters: []
+purpose: []
+emotional_turn:
+  from: ""
+  to: ""
+depends_on: []
+spoils_or_sets_up: []
+continuity_constraints: []
+tags: []
+---
+
+INT. LOCATION - TIME
+
+# Scene body in Fountain format
+"""
+    scene_path.write_text(template, encoding="utf-8")
+    subprocess.run(["git", "add", str(scene_path)], cwd=PROJECT_ROOT, capture_output=True)
+    subprocess.run(["git", "commit", "-m", f"scriptops: create idea {scene_id}"], cwd=PROJECT_ROOT, capture_output=True)
+    print(f"Created idea: {scene_path}")
+
+def cmd_scene_promote(args):
+    ensure_git_clean()
+    scene_id = args.id
+    target_status = args.to
+
+    scene_path = PROJECT_ROOT / "scenes" / f"{scene_id}.fountain"
+    if not scene_path.exists():
+        candidates = list((PROJECT_ROOT / "staging" / "scenes").glob(f"{scene_id}-*.fountain"))
+        if candidates:
+            scene_path = sorted(candidates)[-1]
+        else:
+            print(f"FATAL: Scene {scene_id} not found.", file=sys.stderr)
+            sys.exit(1)
+
+    fm, body = parse_front_matter(scene_path)
+    current = fm.get("status", "idea")
+    config = load_config()
+    allowed = config.get("state_machine", {}).get("allowed_transitions", {}).get(current, [])
+
+    if target_status not in allowed:
+        print(f"FATAL: Cannot transition {current} -> {target_status}. Allowed: {allowed}", file=sys.stderr)
+        sys.exit(1)
+
+    fm["status"] = target_status
+    fm["hash"] = "PLACEHOLDER"
+
+    if target_status in ("candidate", "accepted"):
+        if target_status == "accepted":

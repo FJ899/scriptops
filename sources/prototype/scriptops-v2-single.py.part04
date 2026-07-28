@@ -1,0 +1,200 @@
+        try:
+            return float(v)
+        except:
+            return v
+
+def _simple_yaml_dump(obj, indent=0):
+    """Dump simple objects to YAML-like format."""
+    lines = []
+    prefix = "  " * indent
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if isinstance(v, (dict, list)) and v:
+                lines.append(f"{prefix}{k}:")
+                lines.append(_simple_yaml_dump(v, indent + 1))
+            else:
+                lines.append(f"{prefix}{k}: {_yaml_scalar(v)}")
+    elif isinstance(obj, list):
+        for item in obj:
+            if isinstance(item, dict):
+                first = True
+                for k, v in item.items():
+                    if first:
+                        lines.append(f"{prefix}- {k}: {_yaml_scalar(v)}")
+                        first = False
+                    else:
+                        lines.append(f"{prefix}  {k}: {_yaml_scalar(v)}")
+            else:
+                lines.append(f"{prefix}- {_yaml_scalar(item)}")
+    else:
+        lines.append(f"{prefix}{_yaml_scalar(obj)}")
+    return "\n".join(lines)
+
+def _yaml_scalar(v):
+    if v is None: return "null"
+    if isinstance(v, bool): return str(v).lower()
+    if isinstance(v, str):
+        if any(c in v for c in ":#[]{}|>&*!?,'\"\n"):
+            return f'"{v}"'
+        return v
+    return str(v)
+
+# ============================================================
+# CORE UTILITIES
+# ============================================================
+
+PROJECT_ROOT = Path(".").resolve()
+SCRIPTOPS_DIR = PROJECT_ROOT / ".scriptops"
+CONFIG_PATH = SCRIPTOPS_DIR / "config.yaml"
+
+def load_config():
+    if CONFIG_PATH.exists():
+        return yaml_load(CONFIG_PATH.read_text(encoding="utf-8"))
+    return yaml_load(DEFAULT_CONFIG)
+
+def git_is_clean():
+    result = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
+    return result.stdout.strip() == ""
+
+def ensure_git_clean():
+    if not git_is_clean():
+        print("FATAL: Git working tree is dirty. Commit or stash before proceeding.", file=sys.stderr)
+        sys.exit(1)
+
+def compute_sha256(text):
+    return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+def estimate_tokens(text):
+    return len(text) // 4
+
+def parse_front_matter(path):
+    text = path.read_text(encoding="utf-8")
+    if not text.startswith("---"):
+        return {}, text
+    parts = text.split("---", 2)
+    if len(parts) < 3:
+        return {}, text
+    return yaml_load(parts[1]), parts[2]
+
+def write_scene_file(path, fm, body):
+    fm_copy = dict(fm)
+    fm_copy.pop("hash", None)
+    canonical = yaml_dump(fm_copy, sort_keys=False) + body
+    fm["hash"] = compute_sha256(canonical)
+    text = "---\n" + yaml_dump(fm, sort_keys=False) + "---" + body
+    path.write_text(text, encoding="utf-8")
+    return fm["hash"]
+
+# ============================================================
+# CONTEXT BUILDER
+# ============================================================
+
+class ContextBuilder:
+    def __init__(self, project_root):
+        self.root = Path(project_root)
+        self.config = load_config()
+        self.bible = self._load_bible()
+        self.scene_index = self._load_scene_index()
+
+    def _load_bible(self):
+        bible_dir = self.root / "bible"
+        bible = {}
+        for f in ["characters.yaml", "locations.yaml", "timeline.yaml", "premise.md", "themes.md", "style-guide.md"]:
+            path = bible_dir / f
+            if path.exists():
+                bible[f.stem] = path.read_text(encoding="utf-8") if f.endswith(".md") else yaml_load(path.read_text(encoding="utf-8"))
+        return bible
+
+    def _load_scene_index(self):
+        idx_path = self.root / "summaries" / "scene-index.yaml"
+        if idx_path.exists():
+            return yaml_load(idx_path.read_text(encoding="utf-8"))
+        return {}
+
+    def _load_scene_card(self, scene_id):
+        for base in [self.root / "scenes", self.root / "staging" / "scenes"]:
+            path = base / f"{scene_id}.fountain"
+            if path.exists():
+                fm, body = parse_front_matter(path)
+                fm["_body"] = body.strip()
+                return fm
+        raise FileNotFoundError(f"Scene {scene_id} not found")
+
+    def _hash_content(self, text):
+        return compute_sha256(text)
+
+    def build(self, scene_id, mode, task_id):
+        if mode not in self.config.get("context_budgets", {}):
+            raise ValueError(f"Unknown mode: {mode}. Available: {list(self.config.get('context_budgets', {}).keys())}")
+
+        budget = self.config["context_budgets"][mode]
+        allocations = budget["allocations"]
+        total = budget["total_tokens"]
+
+        scene_card = self._load_scene_card(scene_id)
+
+        sections = []
+        sources = []
+
+        def add_section(title, content, source_id, source_type):
+            if not content or not content.strip():
+                return
+            sections.append(f"# {title}\n\n{content}")
+            sources.append({
+                "id": source_id,
+                "hash": self._hash_content(content),
+                "type": source_type,
+                "included_tokens": estimate_tokens(content)
+            })
+
+        # Layer 1: Role instruction
+        prompt_text = PROMPTS.get(mode, f"# Role: {mode}\nFollow the scene card and constraints precisely.")
+        add_section("ROLE INSTRUCTION", prompt_text, f"PROMPT-{mode}", "instruction")
+
+        # Layer 2: Task objective
+        task_dir = self.root / "tasks" / task_id
+        task_pack_path = task_dir / "task-pack.yaml"
+        if task_pack_path.exists():
+            task_pack = yaml_load(task_pack_path.read_text(encoding="utf-8"))
+            task_text = f"OBJECTIVE: {task_pack.get('objective', '')}\n\nACCEPTANCE CRITERIA:\n"
+            task_text += "\n".join(f"- {c}" for c in task_pack.get('acceptance_criteria', []))
+            if task_pack.get('forbidden_changes'):
+                task_text += "\n\nFORBIDDEN CHANGES:\n" + "\n".join(f"- {f}" for f in task_pack['forbidden_changes'])
+            add_section("TASK PACK", task_text, task_id, "task")
+
+        # Layer 3: Scene card
+        scene_card_text = yaml_dump({k: v for k, v in scene_card.items() if not k.startswith('_')}, sort_keys=False)
+        add_section("SCENE CARD", scene_card_text, scene_id, "scene")
+
+        # Mode-specific layers
+        if mode in ("write-scene", "rewrite-scene", "dialogue-pass", "continuity-review", "character-consistency-review"):
+            bible_parts = []
+            if "premise" in self.bible:
+                bible_parts.append(f"PREMISE:\n{self.bible['premise']}")
+            if "themes" in self.bible:
+                bible_parts.append(f"THEMES:\n{self.bible['themes']}")
+            if "style-guide" in self.bible:
+                bible_parts.append(f"STYLE:\n{self.bible['style-guide']}")
+            add_section("STORY BIBLE CORE", "\n\n".join(bible_parts), "BIBLE-CORE", "project")
+
+        if mode in ("write-scene", "rewrite-scene", "dialogue-pass", "character-consistency-review"):
+            char_names = scene_card.get("characters", [])
+            chars = self.bible.get("characters", {})
+            char_cards = []
+            for name in char_names:
+                if name in chars:
+                    char_cards.append(yaml_dump({name: chars[name]}, sort_keys=False))
+            add_section("CHARACTER CARDS", "\n---\n".join(char_cards), "CHARS-RELEVANT", "character")
+
+        if mode in ("write-scene", "rewrite-scene", "continuity-review"):
+            deps = scene_card.get("depends_on", []) + scene_card.get("spoils_or_sets_up", [])
+            neighbor_texts = []
+            for dep_id in deps[:2]:
+                try:
+                    dep = self._load_scene_card(dep_id)
+                    body = dep.get("_body", "")[:1500]
+                    neighbor_texts.append(f"### {dep_id}\n{body}")
+                except FileNotFoundError:
+                    neighbor_texts.append(f"### {dep_id}\n[SCENE NOT FOUND — CHECK DEPENDENCIES]")
+            add_section("NEIGHBOR SCENES", "\n\n".join(neighbor_texts), "NEIGHBORS", "scene")
+
