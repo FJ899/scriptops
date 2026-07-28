@@ -1,0 +1,200 @@
+---
+
+## Verdict: [PASS / WARN / FAIL]
+
+## Defects
+- [ ] None found
+OR
+- [ ] [Severity: critical/warning] [Description] [Evidence from scene text]
+
+## Unsupported Claims
+- [ ] None found
+OR
+- [ ] [Claim] [Why unsupported]
+
+## Required Changes
+- [ ] None
+OR
+- [ ] [Specific change needed]
+
+## STOP Conditions
+If context is insufficient to verify continuity, output:
+STOP: INSUFFICIENT_CONTEXT [specific missing information]
+""",
+
+    "character-consistency-review": """You are a Character Consistency Reviewer.
+You verify that each character in the scene behaves according to their established voice, goal, and arc.
+
+## Core Rules
+1. Check each character's dialogue against their VOICE card.
+2. Verify that actions align with stated GOALS.
+3. Ensure no character reveals information they are keeping SECRET.
+4. Check that relationship dynamics match established patterns.
+5. Flag any deviation from character ARC progression.
+
+## Output Format
+---
+review_id: [AUTO]
+task_id: [FROM TASK]
+scene_id: [PRESERVE]
+timestamp: [ISO8601]
+---
+
+## Per-Character Reports
+
+### [CHARACTER NAME]
+- Voice Match: [score 1-10]
+- Goal Alignment: [PASS/FAIL]
+- Secret Preservation: [PASS/FAIL]
+- Arc Consistency: [PASS/FAIL]
+- Issues: [list or "None"]
+
+## Overall Verdict: [PASS / WARN / FAIL]
+
+## STOP Conditions
+If character cards are missing, output:
+STOP: MISSING_CHARACTER_CARDS [list missing]
+""",
+
+    "structure-review": """You are a Structure Reviewer for a screenplay project.
+You analyze the scene's placement and function within the larger narrative structure.
+
+## Core Rules
+1. Check scene alignment with BEAT SHEET.
+2. Verify scene fulfills its stated PURPOSE within the sequence.
+3. Assess PACING — does the scene match the tempo of its act?
+4. Check SETUP/PAYOFF relationships — does the scene properly set up future events or pay off earlier ones?
+5. Evaluate dramatic tension progression.
+
+## Output Format
+---
+review_id: [AUTO]
+task_id: [FROM TASK]
+scene_id: [PRESERVE]
+timestamp: [ISO8601]
+---
+
+## Structural Analysis
+- Beat Alignment: [PASS/FAIL]
+- Purpose Fulfillment: [PASS/FAIL]
+- Pacing: [too_slow / ok / too_fast]
+- Setup/Payoff Status: [list of checked relationships]
+
+## Recommendations
+- [ ] None
+OR
+- [ ] [Specific structural adjustment]
+
+## Overall Verdict: [PASS / WARN / FAIL]
+""",
+
+    "summarize-scene": """You are a Scene Summarizer.
+You produce a concise summary of the provided scene for use in hierarchical context packs.
+
+## Core Rules
+1. Capture the dramatic function, not just the plot.
+2. Include emotional turn and key character dynamics.
+3. Note any decisions or continuity points established.
+4. Keep it under 150 words.
+
+## Output Format
+---
+summary_id: [AUTO]
+scene_id: [PRESERVE]
+timestamp: [ISO8601]
+---
+
+## 3-Sentence Summary
+[Concise narrative summary]
+
+## Dramatic Function
+[One sentence: what this scene accomplishes structurally]
+
+## Key Decisions / Continuity
+- [list or "None"]
+"""
+}
+
+# ============================================================
+# YAML UTILITIES (minimal, no external deps)
+# ============================================================
+
+def yaml_load(text):
+    """Minimal YAML loader for our subset (no anchors, simple structures)."""
+    try:
+        import yaml
+        return yaml.safe_load(text)
+    except ImportError:
+        # Fallback: parse simple YAML subset
+        return _simple_yaml_parse(text)
+
+def yaml_dump(obj, sort_keys=False):
+    """Minimal YAML dumper."""
+    try:
+        import yaml
+        return yaml.dump(obj, sort_keys=sort_keys, allow_unicode=True, default_flow_style=False)
+    except ImportError:
+        return _simple_yaml_dump(obj)
+
+def _simple_yaml_parse(text):
+    """Parse simple YAML: key: value, lists with -, nested dicts."""
+    result = {}
+    lines = text.split("\n")
+    stack = [(result, 0)]
+    current_list = None
+
+    for line in lines:
+        if not line.strip() or line.strip().startswith("#"):
+            continue
+        indent = len(line) - len(line.lstrip())
+        stripped = line.strip()
+
+        # Pop stack to correct level
+        while stack and stack[-1][1] >= indent and len(stack) > 1:
+            stack.pop()
+
+        current, _ = stack[-1]
+
+        if stripped.startswith("-"):
+            # List item
+            val = stripped[1:].strip()
+            if ":" in val:
+                key, value = val.split(":", 1)
+                if current_list is None:
+                    current_list = []
+                    if isinstance(current, dict):
+                        # Find the last key that needs a list
+                        pass
+                item = {key.strip(): _parse_yaml_value(value.strip())}
+                current_list.append(item)
+            else:
+                if current_list is None:
+                    current_list = []
+                current_list.append(_parse_yaml_value(val))
+        elif ":" in stripped:
+            key, value = stripped.split(":", 1)
+            key = key.strip()
+            value = value.strip()
+            if not value:
+                # Nested dict
+                new_dict = {}
+                current[key] = new_dict
+                stack.append((new_dict, indent + 2))
+                current_list = None
+            else:
+                current[key] = _parse_yaml_value(value)
+                current_list = None
+
+    return result
+
+def _parse_yaml_value(v):
+    if v == "true": return True
+    if v == "false": return False
+    if v == "null" or v == "~": return None
+    if v.startswith("'") and v.endswith("'"): return v[1:-1]
+    if v.startswith('"') and v.endswith('"'): return v[1:-1]
+    if v.startswith("[") and v.endswith("]"):
+        return [_parse_yaml_value(x.strip()) for x in v[1:-1].split(",") if x.strip()]
+    try:
+        return int(v)
+    except:
