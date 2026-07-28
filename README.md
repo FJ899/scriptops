@@ -18,7 +18,7 @@ Nowe AI ma przeczytać w tej kolejności:
 6. `SOURCE_MANIFEST.md`
 7. `RECONSTRUCTION_REPORT.md`
 
-Do rozstrzygania sporów lub sprawdzania pochodzenia decyzji użyć `SOURCE_AUDIT.md` i materiałów z `archive/` zgodnie z `archive/RESTORE.md`.
+Do rozstrzygania sporów lub sprawdzania pochodzenia decyzji użyć `SOURCE_AUDIT_SUMMARY.md`, `SOURCE_MANIFEST.md` i materiałów w `sources/`.
 
 ## Zasady nadrzędne
 
