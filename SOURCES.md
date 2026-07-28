@@ -1,21 +1,25 @@
 # Źródła rekonstrukcji
 
-Szczegółowe materiały pozostają poza repozytorium stanu, dopóki nie zostaną sklasyfikowane pod względem prywatności i aktualności.
+Kanoniczny wykaz źródeł, ich roli i granicy kompletności znajduje się w `SOURCE_MANIFEST.md`.
 
-## Najważniejsze źródła
+## Materiały zabezpieczone w repo
 
-- `ScriptOps_FINAL_MASTER_PACKAGE`
-- `ScriptOps_WebAI_v5_FINAL_SINGLE_USER.md`
-- `scriptops-v2-single.py`
-- `RC1_SCOPE_LOCK.md`
-- `CODEX_MASTER_RC1_BUILD_INSTRUCTION.md`
-- materiały Mądrego Warsztatu / S2 Studio
-- `B4.txt`, `B5.txt`, `B5 - Aneks.txt`
+Repozytorium zawiera:
 
-## Zasada prywatności
+- aktualne podsumowanie decyzji produktu;
+- główną definicję ScriptOps;
+- blokadę zakresu RC1;
+- raport rekonstrukcji;
+- podsumowanie audytu 2016 rekordów źródłowych;
+- pełny prototyp `scriptops-v2-single.py` zapisany w odtwarzalnych częściach wraz z sumą SHA-256;
+- rejestr decyzji;
+- archiwum pomysłów z warunkami powrotu;
+- handoff i niezależną instrukcję startową dla Codex.
 
-Nie kopiować automatycznie pełnego archiwum rozmów, danych prywatnych ani niezweryfikowanych pakietów do GitHub.
+## Materiały pozostawione poza repo
 
-## Pakiet rekonstrukcyjny
+Pełne surowe rozmowy, dane prywatne, duplikaty i całe pierwotne archiwum nie są potrzebne do zwykłego wznowienia pracy. Pozostają zewnętrznym materiałem dowodowym do użycia tylko przy rozstrzyganiu konkretnego sporu lub brakującego pochodzenia decyzji.
 
-Rekonstrukcja została wykonana na podstawie minimalnego pakietu READ_ONLY zawierającego 15 źródeł, pełnego indeksu materiałów i raportu klasyfikacyjnego. Pełne archiwum pozostaje materiałem dowodowym do użycia tylko przy rozstrzyganiu konkretnych sporów lub braków.
+## Aktualna luka
+
+Nie odnaleziono późniejszej implementacji ScriptOps RC1 ani odpowiedzi Codex powstałej po Final Master Package. Jest to jawna luka dowodowa oznaczona jako `ACCESS CHECK REQUIRED`, a nie ukryty stan projektu.
