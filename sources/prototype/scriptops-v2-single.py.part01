@@ -1,0 +1,200 @@
+#!/usr/bin/env python3
+"""
+ScriptOps v2 — Self-Contained Screenplay Operating System
+Single-file edition. No external dependencies except PyYAML.
+
+Install: pip install pyyaml
+Usage: python scriptops.py <command> [args]
+"""
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+# ============================================================
+# EMBEDDED SCHEMAS
+# ============================================================
+
+SCENE_SCHEMA = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "SceneCard",
+    "type": "object",
+    "required": ["scene_id", "act", "status", "hash", "version", "title"],
+    "properties": {
+        "scene_id": {"type": "string", "pattern": "^SCN-[0-9]{3,}$"},
+        "version": {"type": "integer", "minimum": 1},
+        "title": {"type": "string", "minLength": 1},
+        "act": {"type": "integer", "minimum": 1, "maximum": 5},
+        "sequence": {"type": "string"},
+        "status": {
+            "type": "string",
+            "enum": ["idea", "question", "outline", "draft", "candidate", "accepted", "rejected", "archived"]
+        },
+        "location": {"type": "string"},
+        "time": {"type": "string"},
+        "characters": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "purpose": {"type": "array", "items": {"type": "string"}},
+        "emotional_turn": {"type": "object", "properties": {"from": {"type": "string"}, "to": {"type": "string"}}},
+        "depends_on": {"type": "array", "items": {"type": "string", "pattern": "^SCN-[0-9]{3,}$"}},
+        "spoils_or_sets_up": {"type": "array", "items": {"type": "string", "pattern": "^SCN-[0-9]{3,}$"}},
+        "continuity_constraints": {"type": "array", "items": {"type": "string"}},
+        "tags": {"type": "array", "items": {"type": "string"}},
+        "hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "parent_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "context_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "provenance": {
+            "type": "object",
+            "required": ["task_id", "mode", "timestamp"],
+            "properties": {
+                "task_id": {"type": "string"},
+                "mode": {"type": "string"},
+                "model": {"type": "string"},
+                "timestamp": {"type": "string"}
+            }
+        }
+    }
+}
+
+TASK_SCHEMA = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "TaskPack",
+    "type": "object",
+    "required": ["task_id", "created", "author", "mode", "objective", "scene_id"],
+    "properties": {
+        "task_id": {"type": "string", "pattern": "^TASK-[0-9]{4,}$"},
+        "created": {"type": "string"},
+        "author": {"type": "string"},
+        "mode": {
+            "type": "string",
+            "enum": [
+                "write-scene", "rewrite-scene", "dialogue-pass",
+                "continuity-review", "character-consistency-review",
+                "structure-review", "summarize-scene", "extract-decisions",
+                "compare-versions"
+            ]
+        },
+        "scene_id": {"type": "string", "pattern": "^SCN-[0-9]{3,}$"},
+        "objective": {"type": "string", "minLength": 10},
+        "acceptance_criteria": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "forbidden_changes": {"type": "array", "items": {"type": "string"}},
+        "previous_attempt": {"type": "string"},
+        "context_sources": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["id", "hash", "type"],
+                "properties": {
+                    "id": {"type": "string"},
+                    "hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+                    "type": {"type": "string", "enum": ["project", "character", "scene", "decision", "summary", "instruction"]},
+                    "included_tokens": {"type": "integer"}
+                }
+            }
+        }
+    }
+}
+
+# ============================================================
+# EMBEDDED CONFIG
+# ============================================================
+
+DEFAULT_CONFIG = """project:
+  name: ScriptOps Project
+  version: "2.0"
+  source_of_truth: git
+  sqlite_mode: materialized_view
+schema:
+  scene: scene-schema.json
+  task: task-schema.json
+context_budgets:
+  write-scene:
+    total_tokens: 14000
+    allocations:
+      role_instruction: 800
+      scene_card: 600
+      story_bible_core: 1200
+      character_cards: 2000
+      timeline_events: 800
+      neighbor_scenes_full: 3000
+      related_scenes_summary: 2000
+      continuity_constraints: 400
+      output_format: 500
+      reserve: 3700
+  rewrite-scene:
+    total_tokens: 14000
+    allocations:
+      role_instruction: 800
+      current_version_full: 4000
+      revision_notes: 1000
+      story_bible_core: 800
+      character_cards: 1500
+      continuity_constraints: 400
+      output_format: 500
+      reserve: 5000
+  dialogue-pass:
+    total_tokens: 10000
+    allocations:
+      role_instruction: 700
+      scene_dialogue_only: 4000
+      character_voice_cards: 2500
+      relationship_context: 1000
+      output_format: 300
+      reserve: 1500
+  continuity-review:
+    total_tokens: 12000
+    allocations:
+      role_instruction: 600
+      scene_under_review: 3000
+      dependent_scenes: 3000
+      decision_log_relevant: 2000
+      character_knowledge_states: 1500
+      output_format: 400
+      reserve: 1500
+validation:
+  preflight_checks:
+    - git_working_tree_clean
+    - scene_id_valid_and_unique
+    - characters_exist_in_bible
+    - dependencies_exist_and_accepted
+    - token_budget_calculable
+    - no_circular_dependencies
+    - task_pack_schema_valid
+    - context_files_exist_and_hashes_match
+  postflight_checks:
+    - yaml_front_matter_parseable
+    - hash_matches_computed_sha256
+    - parent_hash_matches_previous
+    - fountain_syntax_basic
+    - characters_mentioned_exist_or_declared
+    - forbidden_phrases_check
+    - status_is_candidate
+    - required_sections_per_mode
+    - context_hash_matches_sent_pack
+  forbidden_phrase_rules:
+    - name: continuity_anna_affair
+      pattern: "(?i)Anna.*(wie|wiedziala|wiedziec).*(zdrad|afair)"
+      scope:
+        - SCN-017
+        - SCN-018
+        - SCN-019
+        - SCN-020
+        - SCN-021
+        - SCN-022
+        - SCN-023
+        - SCN-024
+        - SCN-025
+        - SCN-026
+        - SCN-027
+        - SCN-028
+        - SCN-029
+        - SCN-030
+      error: "Anna cannot know about the affair before SCN-031 (per DEC-0042)"
+state_machine:
+  allowed_transitions:
+    idea:
