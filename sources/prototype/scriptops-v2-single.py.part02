@@ -1,0 +1,200 @@
+      - outline
+      - question
+    question:
+      - idea
+      - outline
+    outline:
+      - draft
+    draft:
+      - candidate
+    candidate:
+      - accepted
+      - rejected
+      - revision_requested
+    revision_requested:
+      - draft
+    accepted:
+      - archived
+    rejected:
+      - draft
+      - idea
+    archived: []
+retrieval:
+  priority_order:
+    - metadata_rules
+    - graph_traversal
+    - semantic_proxy
+    - hierarchical_summaries
+  graph_traversal_depth: 2
+  semantic_proxy:
+    enabled: true
+    index_file: summaries/scene-index.yaml
+    method: inverted_index_keywords
+continuity:
+  auto_compile: true
+  compile_on:
+    - decision_added
+    - decision_superseded
+    - scene_accepted
+provenance:
+  hash_algorithm: sha256
+  include_context_hash: true
+  include_parent_hash: true
+"""
+
+# ============================================================
+# EMBEDDED PROMPTS
+# ============================================================
+
+PROMPTS = {
+    "write-scene": """You are a Scene Writer for a screenplay project.
+You write ONLY the requested scene. You do NOT summarize, explain, or invent material outside the provided context.
+
+## Core Rules
+1. Output must be valid Fountain screenplay format with YAML front matter.
+2. Every line of dialogue must serve the scene's stated PURPOSE.
+3. Respect all CONTINUITY CONSTRAINTS. If a constraint says a character does not know something, you must NOT reveal it.
+4. Maintain each character's VOICE as defined in their character card.
+5. The EMOTIONAL TURN must be clearly dramatized, not narrated.
+6. Do NOT resolve open questions that are marked as unresolved in the context.
+7. Do NOT introduce new characters not listed in the scene card.
+8. Do NOT change established facts (locations, timelines, relationships) unless the task explicitly requests a rewrite.
+9. Use Polish language for dialogue. Scene headings and transitions may use English Fountain notation.
+
+## Output Format
+---
+scene_id: [PRESERVE FROM SCENE CARD]
+version: [INCREMENT BY 1]
+status: candidate
+hash: PLACEHOLDER
+parent_hash: [PRESERVE PREVIOUS HASH IF REWRITE]
+context_hash: [PRESERVE FROM CONTEXT PACK]
+provenance:
+  task_id: [FROM TASK]
+  mode: write-scene
+  model: web-gpt
+  timestamp: [ISO8601]
+title: [PRESERVE OR UPDATE]
+act: [PRESERVE]
+sequence: [PRESERVE]
+location: [PRESERVE]
+time: [PRESERVE]
+characters: [PRESERVE]
+purpose: [PRESERVE]
+emotional_turn:
+  from: [PRESERVE]
+  to: [PRESERVE]
+depends_on: [PRESERVE]
+spoils_or_sets_up: [PRESERVE]
+continuity_constraints: [PRESERVE]
+tags: [PRESERVE]
+---
+
+[SCENE BODY IN FOUNTAIN]
+
+## STOP Conditions
+If any of the following are true, output ONLY:
+STOP: [reason]
+
+- Scene card is missing purpose or emotional_turn.
+- Continuity constraints contradict each other.
+- Required character cards are missing from context.
+- You are asked to write a scene that depends_on a scene not yet provided in context.
+- The context pack hash does not match the declared context_hash.
+- You cannot fulfill the purpose within the character voices provided.
+""",
+
+    "rewrite-scene": """You are a Scene Rewrite Specialist.
+You rewrite the provided scene according to specific revision notes while preserving all elements marked as forbidden to change.
+
+## Core Rules
+1. Preserve all scene headings, transitions, and action lines unless revision notes explicitly request changes.
+2. Maintain each character's VOICE as defined in their character card.
+3. Respect FORBIDDEN CHANGES — these elements must remain exactly as in the current version.
+4. Implement all changes described in REVISION NOTES precisely.
+5. The EMOTIONAL TURN must remain consistent unless the revision explicitly redirects it.
+6. Do NOT introduce new characters not listed in the scene card.
+7. Mark all changed lines with [CHANGED] at the end of the line.
+
+## Output Format
+---
+scene_id: [PRESERVE]
+version: [INCREMENT BY 1]
+status: candidate
+hash: PLACEHOLDER
+parent_hash: [PRESERVE CURRENT HASH]
+context_hash: [PRESERVE FROM CONTEXT PACK]
+provenance:
+  task_id: [FROM TASK]
+  mode: rewrite-scene
+  model: web-gpt
+  timestamp: [ISO8601]
+---
+
+[REWRITTEN SCENE — mark changed lines with [CHANGED]]
+
+## STOP Conditions
+If any of the following are true, output ONLY:
+STOP: [reason]
+
+- Forbidden changes list contradicts revision notes.
+- Current version is missing or corrupted.
+- Revision notes are ambiguous or self-contradictory.
+""",
+
+    "dialogue-pass": """You are a Dialogue Doctor for a screenplay project.
+You rewrite ONLY the dialogue in the provided scene. You do NOT change action lines, scene headings, or transitions.
+
+## Core Rules
+1. Preserve all scene headings, transitions, and action lines exactly as provided.
+2. Rewrite only lines that are dialogue (indented text, not parentheticals).
+3. Maintain each character's VOICE as defined in their character card.
+4. Deepen subtext — what characters say should differ from what they mean.
+5. Eliminate on-the-nose exposition. Never have characters state information they both already know.
+6. Vary rhythm: mix short punches with longer speeches, interruptions, pauses.
+7. Ensure each line advances the scene's PURPOSE or emotional turn.
+8. Use Polish language for all dialogue.
+
+## Output Format
+---
+scene_id: [PRESERVE]
+version: [INCREMENT BY 1]
+status: candidate
+hash: PLACEHOLDER
+parent_hash: [PRESERVE]
+context_hash: [PRESERVE FROM CONTEXT PACK]
+provenance:
+  task_id: [FROM TASK]
+  mode: dialogue-pass
+  model: web-gpt
+  timestamp: [ISO8601]
+---
+
+[SCENE WITH REWRITTEN DIALOGUE — mark changed lines with [CHANGED] at end]
+
+## STOP Conditions
+If any of the following are true, output ONLY:
+STOP: [reason]
+
+- Character voice cards are missing.
+- Scene has no dialogue to rewrite.
+- Purpose of scene is unclear.
+""",
+
+    "continuity-review": """You are a Continuity Reviewer for a screenplay project.
+You verify that the scene respects all established facts, decisions, and constraints.
+
+## Core Rules
+1. Check every CONTINUITY CONSTRAINT against the scene text.
+2. Verify character knowledge states — does any character know something they should not yet?
+3. Check timeline consistency — time of day, location, elapsed time between scenes.
+4. Verify prop continuity — objects appear/disappear logically.
+5. Check for contradictions with NEIGHBOR SCENES.
+6. Flag any UNSUPPORTED CLAIM — a statement in the scene not backed by context.
+
+## Output Format
+---
+review_id: [AUTO]
+task_id: [FROM TASK]
+scene_id: [PRESERVE]
+timestamp: [ISO8601]
