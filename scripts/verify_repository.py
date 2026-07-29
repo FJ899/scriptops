@@ -5,13 +5,18 @@ from __future__ import annotations
 
 import hashlib
 import sys
-import tempfile
 from pathlib import Path
 
-from restore_v2 import EXPECTED_SHA256, RestoreError, restore_to_path
+from restore_v2 import (
+    CANONICAL_FILE,
+    EXPECTED_SHA256,
+    EXPECTED_SIZE,
+    RestoreError,
+    reconstruct_bytes,
+    validate_content,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_PROTOTYPE_SIZE = 51980
 
 REQUIRED_FILES = [
     "README.md",
@@ -25,6 +30,8 @@ REQUIRED_FILES = [
     "CODEX_START.md",
     "continuity/COLD_START_AUDIT-001.md",
     "scripts/restore_v2.py",
+    "legacy/scriptops-v2-single.py",
+    ".github/pull_request_template.md",
     "sources/Decision_Summary_Current_State.md",
     "sources/ScriptOps_Main_Theme_Summary.md",
     "sources/RC1_SCOPE_LOCK.md",
@@ -73,9 +80,27 @@ def check_status_consistency() -> None:
         fail("README.md ma niespójny status")
     if "ACCESS CHECK REQUIRED" not in handoff:
         fail("HANDOFF.md nie zachowuje aktywnej blokady")
-    if "Prywatne repozytorium" in readme:
-        fail("README.md utrwala zmienną właściwość widoczności repozytorium")
+    if "Prywatne repozytorium" in readme or "prywatnego repo" in read_text("DECISION_LOG.md"):
+        fail("dokumentacja utrwala zmienną właściwość widoczności repozytorium")
     print("[PASS] statusy i opis repo są spójne")
+
+
+def check_handoff_contract() -> None:
+    handoff = read_text("HANDOFF.md")
+    required_markers = [
+        'project: "ScriptOps"',
+        'portfolio_status: "QUEUED #1"',
+        'activation: "NOT ACTIVATED"',
+        'state_owner: "PROJECT_STATE.md"',
+        'blocker: "ACCESS CHECK REQUIRED"',
+        'next_step: "perform_access_check"',
+        'resume_contract: "READ_ONLY / NO IMPLEMENTATION"',
+        "Nagłówek YAML jest maszynowym skrótem",
+    ]
+    for marker in required_markers:
+        if marker not in handoff:
+            fail(f"HANDOFF.md nie zawiera wymaganego pola lub zabezpieczenia: {marker}")
+    print("[PASS] maszynowy i opisowy handoff mają wspólny kontrakt")
 
 
 def check_source_paths() -> None:
@@ -96,6 +121,13 @@ def check_source_paths() -> None:
         if reference.endswith(".md") and not (ROOT / reference).is_file():
             fail(f"wskazane źródło nie istnieje: {reference}")
 
+    for reference in [
+        "legacy/scriptops-v2-single.py",
+        "sources/RC1_SCOPE_LOCK.md",
+    ]:
+        if reference not in source_manifest:
+            fail(f"SOURCE_MANIFEST.md nie wskazuje aktywnego źródła: {reference}")
+
     if "Historyczne ścieżki pochodzenia" not in project_state:
         fail("PROJECT_STATE.md nie odróżnia historycznych ścieżek od aktywnych")
     if "Aktywne, odczytywalne kopie" not in source_manifest:
@@ -103,35 +135,34 @@ def check_source_paths() -> None:
     print("[PASS] aktywne źródła i historyczne pochodzenie są rozdzielone")
 
 
-def check_prototype_restore() -> None:
+def check_prototype() -> None:
     try:
-        with tempfile.TemporaryDirectory(prefix="scriptops-v2-") as temp_dir:
-            output = Path(temp_dir) / "scriptops-v2-single.py"
-            actual_sha = restore_to_path(output)
-            content = output.read_bytes()
+        canonical = CANONICAL_FILE.read_bytes()
+        canonical_sha = validate_content(canonical)
+        reconstructed = reconstruct_bytes()
+        reconstructed_sha = validate_content(reconstructed)
     except (OSError, RestoreError) as exc:
-        fail(f"automatyczne odtworzenie prototypu nie powiodło się: {exc}")
+        fail(f"kontrola prototypu nie powiodła się: {exc}")
 
-    if actual_sha != EXPECTED_SHA256:
-        fail(
-            "suma prototypu v2 jest niezgodna: "
-            f"expected={EXPECTED_SHA256}, actual={actual_sha}"
-        )
-    if len(content) != EXPECTED_PROTOTYPE_SIZE:
+    if canonical != reconstructed:
+        fail("kanoniczny prototyp nie jest identyczny z częściami transportowymi")
+    if canonical_sha != EXPECTED_SHA256 or reconstructed_sha != EXPECTED_SHA256:
+        fail("prototyp ma nieoczekiwaną sumę SHA-256")
+    if len(canonical) != EXPECTED_SIZE:
         fail(
             "rozmiar prototypu v2 jest niezgodny: "
-            f"expected={EXPECTED_PROTOTYPE_SIZE}, actual={len(content)}"
+            f"expected={EXPECTED_SIZE}, actual={len(canonical)}"
         )
-    if hashlib.sha256(content).hexdigest() != EXPECTED_SHA256:
-        fail("plik zapisany przez restore_v2.py ma niezgodną sumę")
+    if hashlib.sha256(canonical).hexdigest() != EXPECTED_SHA256:
+        fail("kanoniczny plik ma niezgodną sumę")
 
     print(
-        f"[PASS] prototyp v2 odtworzony: {EXPECTED_PROTOTYPE_SIZE} B, "
-        f"SHA-256 {actual_sha} i poprawna składnia"
+        f"[PASS] kanoniczny prototyp v2: {EXPECTED_SIZE} B, "
+        f"SHA-256 {canonical_sha}; części transportowe są identyczne"
     )
 
 
-def check_scope_and_ideas() -> None:
+def check_scope_decisions_and_ideas() -> None:
     scope = read_text("sources/RC1_SCOPE_LOCK.md")
     ideas = read_text("IDEA_ARCHIVE.md")
     decisions = read_text("DECISION_LOG.md")
@@ -152,12 +183,35 @@ def check_scope_and_ideas() -> None:
 
     if ideas.count("## IDEA-SO-") < 12:
         fail("IDEA_ARCHIVE.md nie zawiera pełnego zestawu zabezpieczonych kierunków")
-    if "DEC-SO-008" not in decisions:
-        fail("DECISION_LOG.md nie zapisuje braku aktywacji projektu")
+    for marker in [
+        "DEC-SO-008",
+        "DEC-SO-009",
+        "wyłącznie decyzje semantyczne",
+        "legacy/scriptops-v2-single.py",
+        "sources/RC1_SCOPE_LOCK.md",
+    ]:
+        if marker not in decisions:
+            fail(f"DECISION_LOG.md nie zawiera: {marker}")
     if "PLAN FIRST / NO IMPLEMENTATION WITHOUT APPROVAL" not in codex:
         fail("CODEX_START.md nie wymusza etapu planowania")
 
-    print("[PASS] zakres, decyzje i pomysły są zabezpieczone")
+    print("[PASS] zakres, decyzje semantyczne i pomysły są zabezpieczone")
+
+
+def check_pull_request_filter() -> None:
+    template = read_text(".github/pull_request_template.md")
+    required = [
+        "Problem / porażka",
+        "Dlaczego obecny mechanizm nie wystarcza",
+        "Obserwowalny dowód zaliczenia",
+        "Dodany koszt utrzymania",
+        "Poza zakresem",
+        "Decyzja semantyczna",
+    ]
+    for marker in required:
+        if marker not in template:
+            fail(f"szablon PR nie zawiera filtra: {marker}")
+    print("[PASS] filtr PR chroni przed rozbudową bez dowodu")
 
 
 def check_continuity_audit() -> None:
@@ -178,9 +232,11 @@ def check_continuity_audit() -> None:
 def main() -> None:
     check_required_files()
     check_status_consistency()
+    check_handoff_contract()
     check_source_paths()
-    check_prototype_restore()
-    check_scope_and_ideas()
+    check_prototype()
+    check_scope_decisions_and_ideas()
+    check_pull_request_filter()
     check_continuity_audit()
     print("[PASS] repozytorium jest samowystarczalne na obecnym etapie")
 
