@@ -1,3 +1,13 @@
+---
+project: "ScriptOps"
+portfolio_status: "QUEUED #1"
+activation: "NOT ACTIVATED"
+state_owner: "PROJECT_STATE.md"
+blocker: "ACCESS CHECK REQUIRED"
+next_step: "perform_access_check"
+resume_contract: "READ_ONLY / NO IMPLEMENTATION"
+---
+
 # HANDOFF — ScriptOps
 
 ## Stan wejściowy
@@ -8,6 +18,8 @@
 - Lokalne źródło prawdy: `PROJECT_STATE.md`
 - Blokada: `ACCESS CHECK REQUIRED`
 
+Nagłówek YAML jest maszynowym skrótem tego samego handoffu, a nie osobnym źródłem prawdy. W przypadku sprzeczności obowiązuje treść `PROJECT_STATE.md` oraz najnowsza jawna decyzja użytkownika.
+
 ## Co zostało wykonane
 
 1. Zrekonstruowano ciąg: workflow B3 → B2 → RR → Mądry Warsztat / S2 Studio → ScriptOps v2 → ScriptOps WebAI v5 / RC1.
@@ -15,12 +27,13 @@
 3. Zatwierdzono minimalny `PROJECT_STATE.md`.
 4. Zabezpieczono raport rekonstrukcji, audyt źródeł i minimalny pakiet dowodowy w tym repo.
 5. Zachowano pomysły post-MVP z warunkami powrotu.
+6. Pełny historyczny prototyp v2 zapisano bezpośrednio jako `legacy/scriptops-v2-single.py`; części w `sources/prototype/` pozostają wyłącznie odtwarzalnym zapisem transportowym.
 
 ## Czego nie wykonano
 
 - nie potwierdzono implementacji ScriptOps v5 RC1;
 - nie znaleziono późniejszego repozytorium ani wyniku pracy Codex;
-- nie porównano jeszcze prototypu v2 z `RC1_SCOPE_LOCK.md`;
+- nie porównano jeszcze prototypu v2 z `sources/RC1_SCOPE_LOCK.md`;
 - nie wykonano pełnego testu end-to-end RC1;
 - nie aktywowano projektu do implementacji.
 
