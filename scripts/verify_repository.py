@@ -5,10 +5,13 @@ from __future__ import annotations
 
 import hashlib
 import sys
+import tempfile
 from pathlib import Path
 
+from restore_v2 import EXPECTED_SHA256, RestoreError, restore_to_path
+
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_PROTOTYPE_SHA256 = "881dade6c6c506b9a9d41ebfbf68afb18b66db7583d35f746fb29ed7b36ac596"
+EXPECTED_PROTOTYPE_SIZE = 51980
 
 REQUIRED_FILES = [
     "README.md",
@@ -20,6 +23,8 @@ REQUIRED_FILES = [
     "RECONSTRUCTION_REPORT.md",
     "SOURCE_AUDIT_SUMMARY.md",
     "CODEX_START.md",
+    "continuity/COLD_START_AUDIT-001.md",
+    "scripts/restore_v2.py",
     "sources/Decision_Summary_Current_State.md",
     "sources/ScriptOps_Main_Theme_Summary.md",
     "sources/RC1_SCOPE_LOCK.md",
@@ -46,7 +51,11 @@ def read_text(relative_path: str) -> str:
 
 
 def check_required_files() -> None:
-    missing = [path for path in REQUIRED_FILES + PROTOTYPE_PARTS if not (ROOT / path).is_file()]
+    missing = [
+        path
+        for path in REQUIRED_FILES + PROTOTYPE_PARTS
+        if not (ROOT / path).is_file()
+    ]
     if missing:
         fail("brak wymaganych plików: " + ", ".join(missing))
     print(f"[PASS] wymagane pliki: {len(REQUIRED_FILES) + len(PROTOTYPE_PARTS)}")
@@ -64,28 +73,62 @@ def check_status_consistency() -> None:
         fail("README.md ma niespójny status")
     if "ACCESS CHECK REQUIRED" not in handoff:
         fail("HANDOFF.md nie zachowuje aktywnej blokady")
-    print("[PASS] statusy są spójne")
+    if "Prywatne repozytorium" in readme:
+        fail("README.md utrwala zmienną właściwość widoczności repozytorium")
+    print("[PASS] statusy i opis repo są spójne")
 
 
-def reconstruct_prototype() -> bytes:
-    return b"".join((ROOT / path).read_bytes() for path in PROTOTYPE_PARTS)
+def check_source_paths() -> None:
+    project_state = read_text("PROJECT_STATE.md")
+    source_manifest = read_text("SOURCE_MANIFEST.md")
+
+    required_references = [
+        "sources/Decision_Summary_Current_State.md",
+        "sources/ScriptOps_Main_Theme_Summary.md",
+        "sources/RC1_SCOPE_LOCK.md",
+        "scripts/restore_v2.py",
+        "RECONSTRUCTION_REPORT.md",
+        "SOURCE_AUDIT_SUMMARY.md",
+    ]
+    for reference in required_references:
+        if reference not in project_state:
+            fail(f"PROJECT_STATE.md nie wskazuje aktywnego źródła: {reference}")
+        if reference.endswith(".md") and not (ROOT / reference).is_file():
+            fail(f"wskazane źródło nie istnieje: {reference}")
+
+    if "Historyczne ścieżki pochodzenia" not in project_state:
+        fail("PROJECT_STATE.md nie odróżnia historycznych ścieżek od aktywnych")
+    if "Aktywne, odczytywalne kopie" not in source_manifest:
+        fail("SOURCE_MANIFEST.md nie wyjaśnia mapowania historycznych ścieżek")
+    print("[PASS] aktywne źródła i historyczne pochodzenie są rozdzielone")
 
 
-def check_prototype() -> None:
-    content = reconstruct_prototype()
-    actual = hashlib.sha256(content).hexdigest()
-    if actual != EXPECTED_PROTOTYPE_SHA256:
+def check_prototype_restore() -> None:
+    try:
+        with tempfile.TemporaryDirectory(prefix="scriptops-v2-") as temp_dir:
+            output = Path(temp_dir) / "scriptops-v2-single.py"
+            actual_sha = restore_to_path(output)
+            content = output.read_bytes()
+    except (OSError, RestoreError) as exc:
+        fail(f"automatyczne odtworzenie prototypu nie powiodło się: {exc}")
+
+    if actual_sha != EXPECTED_SHA256:
         fail(
             "suma prototypu v2 jest niezgodna: "
-            f"expected={EXPECTED_PROTOTYPE_SHA256}, actual={actual}"
+            f"expected={EXPECTED_SHA256}, actual={actual_sha}"
         )
+    if len(content) != EXPECTED_PROTOTYPE_SIZE:
+        fail(
+            "rozmiar prototypu v2 jest niezgodny: "
+            f"expected={EXPECTED_PROTOTYPE_SIZE}, actual={len(content)}"
+        )
+    if hashlib.sha256(content).hexdigest() != EXPECTED_SHA256:
+        fail("plik zapisany przez restore_v2.py ma niezgodną sumę")
 
-    try:
-        compile(content.decode("utf-8"), "scriptops-v2-single.py", "exec")
-    except (UnicodeDecodeError, SyntaxError) as exc:
-        fail(f"odtworzony prototyp nie jest poprawnym kodem Python: {exc}")
-
-    print(f"[PASS] prototyp v2: SHA-256 {actual} i poprawna składnia")
+    print(
+        f"[PASS] prototyp v2 odtworzony: {EXPECTED_PROTOTYPE_SIZE} B, "
+        f"SHA-256 {actual_sha} i poprawna składnia"
+    )
 
 
 def check_scope_and_ideas() -> None:
@@ -117,11 +160,28 @@ def check_scope_and_ideas() -> None:
     print("[PASS] zakres, decyzje i pomysły są zabezpieczone")
 
 
+def check_continuity_audit() -> None:
+    audit = read_text("continuity/COLD_START_AUDIT-001.md")
+    required_markers = [
+        "PUBLIC / NO PRIOR MEMORY / READ_ONLY",
+        "PASS WITH FIXES",
+        "Wznowienie ScriptOps — PASS",
+        "GAP-001 — BPM:160",
+        "scripts/restore_v2.py",
+    ]
+    for marker in required_markers:
+        if marker not in audit:
+            fail(f"audyt ciągłości nie zawiera wymaganego wpisu: {marker}")
+    print("[PASS] wynik niezależnego testu ciągłości jest zapisany")
+
+
 def main() -> None:
     check_required_files()
     check_status_consistency()
-    check_prototype()
+    check_source_paths()
+    check_prototype_restore()
     check_scope_and_ideas()
+    check_continuity_audit()
     print("[PASS] repozytorium jest samowystarczalne na obecnym etapie")
 
 
