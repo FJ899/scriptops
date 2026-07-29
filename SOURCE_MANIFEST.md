@@ -6,8 +6,8 @@ Repo zawiera minimalny pakiet potrzebny do wznowienia i kontynuacji pracy bez do
 
 - `README.md` — kolejność uruchomienia nowej sesji;
 - `PROJECT_STATE.md` — aktualny stan projektu;
-- `HANDOFF.md` — punkt wznowienia i ACCESS CHECK;
-- `DECISION_LOG.md` — jawne decyzje;
+- `HANDOFF.md` — punkt wznowienia i `ACCESS CHECK` wraz z maszynowym nagłówkiem;
+- `DECISION_LOG.md` — wyłącznie decyzje semantyczne;
 - `IDEA_ARCHIVE.md` — zachowane pomysły i warunki powrotu;
 - `CODEX_START.md` — niezależny prompt etapu planowania RC1;
 - `RECONSTRUCTION_REPORT.md` — zrekonstruowana historia, dowody i miejsce zatrzymania;
@@ -19,25 +19,31 @@ Repo zawiera minimalny pakiet potrzebny do wznowienia i kontynuacji pracy bez do
 - `sources/Decision_Summary_Current_State.md` — aktualne podsumowanie decyzji produktu;
 - `sources/ScriptOps_Main_Theme_Summary.md` — główna definicja i prawo produktu;
 - `sources/RC1_SCOPE_LOCK.md` — obowiązująca blokada zakresu RC1;
-- `sources/prototype/` — pełny prototyp `scriptops-v2-single.py` zapisany w siedmiu częściach wraz z instrukcją odtworzenia i sumą kontrolną.
+- `legacy/scriptops-v2-single.py` — pojedyncza kanoniczna kopia historycznego prototypu v2;
+- `sources/prototype/` — siedem części transportowych, instrukcja awaryjnego odtworzenia i dowód odtwarzalności.
 
-Historyczne ścieżki z `ScriptOps_FINAL_MASTER_PACKAGE` są informacją o pochodzeniu. Aktywne, odczytywalne kopie wymagane do wznowienia znajdują się pod ścieżkami `sources/...` wymienionymi wyżej.
+Historyczne ścieżki z `ScriptOps_FINAL_MASTER_PACKAGE` są informacją o pochodzeniu. Aktywne, odczytywalne kopie wymagane do wznowienia znajdują się pod ścieżkami wymienionymi wyżej.
 
 ## Integralność prototypu
 
-Oryginalny plik:
+Kanoniczny plik:
 
 ```text
-scriptops-v2-single.py
+legacy/scriptops-v2-single.py
 SHA-256: 881dade6c6c506b9a9d41ebfbf68afb18b66db7583d35f746fb29ed7b36ac596
 Rozmiar: 51980 B
 ```
 
-Zalecana kontrola i odtworzenie:
+Kontrola:
 
 ```bash
-python scripts/restore_v2.py --check-only
-python scripts/restore_v2.py
+python scripts/verify_repository.py
+```
+
+Awaryjne odtworzenie kanonicznego pliku z części transportowych:
+
+```bash
+python scripts/restore_v2.py --force
 ```
 
 Instrukcja alternatywna: `sources/prototype/RESTORE.md`.
