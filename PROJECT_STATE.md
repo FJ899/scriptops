@@ -4,6 +4,7 @@ canonical_name: "ScriptOps"
 cos_status: "QUEUED #1"
 status: "NOT ACTIVATED / SOURCE OF TRUTH ACTIVE / ACCESS CHECK REQUIRED"
 reconstructed_at: "2026-07-27"
+updated_at: "2026-07-29"
 state_owner: "PROJECT_STATE.md"
 ---
 
@@ -99,7 +100,7 @@ Final Master Package wskazuje jako aktualny kandydat decyzji:
 
 ### EXECUTABLE MECHANISM — CZĘŚCIOWY
 
-- `scriptops-v2-single.py` uruchamia się.
+- `legacy/scriptops-v2-single.py` uruchamia się.
 - Potwierdzono inicjalizację projektu, kontrolę stanu, utworzenie sceny, zmianę statusu sceny i automatyczne commity Git.
 - Prototyp v2 nie jest implementacją v5 RC1.
 
@@ -130,13 +131,13 @@ ale zawierają instrukcje rozpoczęcia implementacji, nie gotowy build.
 
 Istniejący prototyp realizuje część starszego procesu, lecz ma inny model danych i mniejszy zakres.
 
-**Werdykt:** nie zakładać, że v2 jest bazą RC1 bez porównania kodu z `sources/RC1_SCOPE_LOCK.md`.
+**Werdykt:** nie zakładać, że v2 jest bazą RC1 bez porównania `legacy/scriptops-v2-single.py` z `sources/RC1_SCOPE_LOCK.md`.
 
 ### Redukcja pracy ręcznej
 
 RC1 nadal zakłada ręczne przeniesienie odpowiedzi WebAI.
 
-**Werdykt:** to świadome ograniczenie pierwszego testu. Automatyzacja przeglądarki pozostaje osobnym kierunkiem post-MVP.
+**Werdykt:** to świadome ograniczenie pierwszego testu. Automatyzacja przeglądarki pozostaje osobnym kierunkiem post-MVP. Tarcie ręcznego kroku należy zmierzyć w pierwszym realnym cyklu, a nie zakładać z góry.
 
 ## 9. Miejsce zatrzymania
 
@@ -169,7 +170,7 @@ późniejszej implementacji ScriptOps RC1 lub odpowiedzi Codex powstałej
 po Final Master Package.
 
 Jeżeli nic takiego nie istnieje, następnym krokiem będzie porównanie
-odtworzonego `scriptops-v2-single.py` z `sources/RC1_SCOPE_LOCK.md`
+`legacy/scriptops-v2-single.py` z `sources/RC1_SCOPE_LOCK.md`
 przed decyzją o bazie implementacji.
 
 ## 12. Źródła szczegółowe
@@ -180,9 +181,10 @@ przed decyzją o bazie implementacji.
 - `sources/ScriptOps_Main_Theme_Summary.md` — definicja i główne prawo produktu;
 - `sources/RC1_SCOPE_LOCK.md` — obowiązująca blokada zakresu RC1;
 - `CODEX_START.md` — samowystarczalna instrukcja rozpoczęcia etapu planowania;
-- `sources/prototype/RESTORE.md` — instrukcja odtworzenia prototypu;
-- `scripts/restore_v2.py` — automatyczne odtworzenie i kontrola integralności prototypu;
-- `sources/prototype/scriptops-v2-single.py.part01` … `part07` — pełna treść prototypu v2;
+- `legacy/scriptops-v2-single.py` — pojedyncza kanoniczna kopia historycznego prototypu v2;
+- `sources/prototype/RESTORE.md` — instrukcja awaryjnego odtworzenia prototypu;
+- `scripts/restore_v2.py` — kontrola i odtworzenie kanonicznego pliku;
+- `sources/prototype/scriptops-v2-single.py.part01` … `part07` — transportowy zapis pełnej treści prototypu v2;
 - `RECONSTRUCTION_REPORT.md` i `SOURCE_AUDIT_SUMMARY.md` — historia, dowody i granice rekonstrukcji.
 
 ### Historyczne ścieżki pochodzenia
