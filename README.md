@@ -1,6 +1,6 @@
 # ScriptOps
 
-Prywatne repozytorium lokalnego stanu projektu **Narzędzie pisarskie / ScriptOps**.
+Repozytorium lokalnego stanu projektu **Narzędzie pisarskie / ScriptOps**.
 
 ## Status
 
@@ -29,8 +29,26 @@ Do rozstrzygania sporów lub sprawdzania pochodzenia decyzji użyć `SOURCE_AUDI
 - nie wolno automatycznie aktywować projektu ani rozszerzać zakresu RC1;
 - pełne rozmowy i dane prywatne pozostają poza aktywnym drzewem; repo zawiera minimalny, odtwarzalny pakiet dowodowy.
 
+## Kontrola repozytorium
+
+```bash
+python scripts/verify_repository.py
+```
+
+Walidator sprawdza wymagane pliki, spójność statusów, źródła RC1, archiwum pomysłów oraz odtwarza prototyp v2 do katalogu tymczasowego, kontrolując jego SHA-256 i składnię.
+
+Ręczne odtworzenie prototypu:
+
+```bash
+python scripts/restore_v2.py
+```
+
+## Audyt ciągłości
+
+Pierwszy niezależny cold start bez pamięci wcześniejszej rozmowy zapisano w `continuity/COLD_START_AUDIT-001.md`.
+
 ## Aktualny następny krok
 
-Sprawdzić, czy istnieje późniejsze repozytorium, kod albo wynik pracy Codex zgodny z `RC1_SCOPE_LOCK.md`.
+Sprawdzić, czy istnieje późniejsze repozytorium, kod albo wynik pracy Codex zgodny z `sources/RC1_SCOPE_LOCK.md`.
 
-Jeżeli nie istnieje, porównać zachowany prototyp `scriptops-v2-single.py` z zakresem RC1 przed decyzją, czy prototyp jest bazą implementacji.
+Jeżeli nie istnieje, porównać odtworzony prototyp `scriptops-v2-single.py` z zakresem RC1 przed decyzją, czy prototyp jest bazą implementacji.
