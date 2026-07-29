@@ -130,7 +130,7 @@ ale zawierają instrukcje rozpoczęcia implementacji, nie gotowy build.
 
 Istniejący prototyp realizuje część starszego procesu, lecz ma inny model danych i mniejszy zakres.
 
-**Werdykt:** nie zakładać, że v2 jest bazą RC1 bez porównania kodu z `RC1_SCOPE_LOCK.md`.
+**Werdykt:** nie zakładać, że v2 jest bazą RC1 bez porównania kodu z `sources/RC1_SCOPE_LOCK.md`.
 
 ### Redukcja pracy ręcznej
 
@@ -169,31 +169,47 @@ późniejszej implementacji ScriptOps RC1 lub odpowiedzi Codex powstałej
 po Final Master Package.
 
 Jeżeli nic takiego nie istnieje, następnym krokiem będzie porównanie
-`scriptops-v2-single.py` z `RC1_SCOPE_LOCK.md` przed decyzją o bazie implementacji.
+odtworzonego `scriptops-v2-single.py` z `sources/RC1_SCOPE_LOCK.md`
+przed decyzją o bazie implementacji.
 
 ## 12. Źródła szczegółowe
 
-### Aktualna definicja i RC1
+### Źródła zabezpieczone bezpośrednio w tym repo
 
-- `ScriptOps_FINAL_MASTER_PACKAGE/01_PRODUCT_TRUTH/Decision_Summary_Current_State.md`
-- `ScriptOps_FINAL_MASTER_PACKAGE/01_PRODUCT_TRUTH/ScriptOps_Main_Theme_Summary.md`
-- `ScriptOps_FINAL_MASTER_PACKAGE/03_CODEX_RC1_BUILD/RC1_SCOPE_LOCK.md`
-- `ScriptOps_FINAL_MASTER_PACKAGE/03_CODEX_RC1_BUILD/CODEX_MASTER_RC1_BUILD_INSTRUCTION.md`
+- `sources/Decision_Summary_Current_State.md` — aktualne podsumowanie decyzji produktu;
+- `sources/ScriptOps_Main_Theme_Summary.md` — definicja i główne prawo produktu;
+- `sources/RC1_SCOPE_LOCK.md` — obowiązująca blokada zakresu RC1;
+- `CODEX_START.md` — samowystarczalna instrukcja rozpoczęcia etapu planowania;
+- `sources/prototype/RESTORE.md` — instrukcja odtworzenia prototypu;
+- `scripts/restore_v2.py` — automatyczne odtworzenie i kontrola integralności prototypu;
+- `sources/prototype/scriptops-v2-single.py.part01` … `part07` — pełna treść prototypu v2;
+- `RECONSTRUCTION_REPORT.md` i `SOURCE_AUDIT_SUMMARY.md` — historia, dowody i granice rekonstrukcji.
 
-### Prototyp
+### Historyczne ścieżki pochodzenia
 
-- `scriptops-v2-single.py`
+Poniższe nazwy opisują lokalizację w pierwotnym pakiecie źródłowym. Nie są ścieżkami aktywnego repo:
 
-### S2 Studio / Mądry Warsztat
+- `ScriptOps_FINAL_MASTER_PACKAGE/01_PRODUCT_TRUTH/Decision_Summary_Current_State.md`;
+- `ScriptOps_FINAL_MASTER_PACKAGE/01_PRODUCT_TRUTH/ScriptOps_Main_Theme_Summary.md`;
+- `ScriptOps_FINAL_MASTER_PACKAGE/03_CODEX_RC1_BUILD/RC1_SCOPE_LOCK.md`;
+- `ScriptOps_FINAL_MASTER_PACKAGE/03_CODEX_RC1_BUILD/CODEX_MASTER_RC1_BUILD_INSTRUCTION.md`.
 
-- `RR_S2_decyzja_start_architektury_v1.txt`
-- `DECYZJA_WDROZENIOWA_PO_AUDYTACH_MADRY_WARSZTAT_v1.md`
-- `00_PANEL_STANU_CURRENT.md`
-- `05_FILE_REGISTRY.md`
-- `03_S2_DECISION_LOG.md`
+Treści potrzebne do zwykłego wznowienia zostały znormalizowane do plików wymienionych w poprzedniej sekcji. Oryginalny pełny pakiet pozostaje materiałem dowodowym poza aktywnym repo.
 
-### Decyzje i reguły użytkownika
+### Historyczne źródła S2 Studio / Mądrego Warsztatu
 
-- `B4.txt`
-- `B5.txt`
-- `B5 - Aneks.txt`
+- `RR_S2_decyzja_start_architektury_v1.txt`;
+- `DECYZJA_WDROZENIOWA_PO_AUDYTACH_MADRY_WARSZTAT_v1.md`;
+- `00_PANEL_STANU_CURRENT.md`;
+- `05_FILE_REGISTRY.md`;
+- `03_S2_DECISION_LOG.md`.
+
+Ich ustalenia wymagane do wznowienia zostały zachowane w `RECONSTRUCTION_REPORT.md` i `SOURCE_AUDIT_SUMMARY.md`. Oryginały nie są wymagane do zwykłego rozpoczęcia kolejnej sesji.
+
+### Historyczne decyzje i reguły użytkownika
+
+- `B4.txt`;
+- `B5.txt`;
+- `B5 - Aneks.txt`.
+
+Ich aktualne konsekwencje są zapisane w sekcjach 4–5 tego dokumentu oraz w `DECISION_LOG.md`.
