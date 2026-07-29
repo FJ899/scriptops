@@ -1,0 +1,38 @@
+name: Materialize legacy prototype
+
+on:
+  push:
+    branches: [agent/lean-continuity-patches]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: ${{ !contains(github.event.head_commit.message, '[materialized]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/lean-continuity-patches
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Restore canonical legacy file
+        run: python scripts/restore_v2.py --output legacy/scriptops-v2-single.py --force
+
+      - name: Commit materialized file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add legacy/scriptops-v2-single.py
+          if git diff --cached --quiet; then
+            echo "No materialized changes"
+          else
+            git commit -m "chore(scriptops): [materialized] zapisz pełny prototyp v2"
+            git push origin HEAD:agent/lean-continuity-patches
+          fi
