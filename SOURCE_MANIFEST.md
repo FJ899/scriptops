@@ -11,7 +11,8 @@ Repo zawiera minimalny pakiet potrzebny do wznowienia i kontynuacji pracy bez do
 - `IDEA_ARCHIVE.md` — zachowane pomysły i warunki powrotu;
 - `CODEX_START.md` — niezależny prompt etapu planowania RC1;
 - `RECONSTRUCTION_REPORT.md` — zrekonstruowana historia, dowody i miejsce zatrzymania;
-- `SOURCE_AUDIT_SUMMARY.md` — podsumowanie pełnej inwentaryzacji 2016 rekordów.
+- `SOURCE_AUDIT_SUMMARY.md` — podsumowanie pełnej inwentaryzacji 2016 rekordów;
+- `continuity/COLD_START_AUDIT-001.md` — niezależny test wznowienia bez pamięci rozmowy.
 
 ## Zachowane źródła produktowe
 
@@ -19,6 +20,8 @@ Repo zawiera minimalny pakiet potrzebny do wznowienia i kontynuacji pracy bez do
 - `sources/ScriptOps_Main_Theme_Summary.md` — główna definicja i prawo produktu;
 - `sources/RC1_SCOPE_LOCK.md` — obowiązująca blokada zakresu RC1;
 - `sources/prototype/` — pełny prototyp `scriptops-v2-single.py` zapisany w siedmiu częściach wraz z instrukcją odtworzenia i sumą kontrolną.
+
+Historyczne ścieżki z `ScriptOps_FINAL_MASTER_PACKAGE` są informacją o pochodzeniu. Aktywne, odczytywalne kopie wymagane do wznowienia znajdują się pod ścieżkami `sources/...` wymienionymi wyżej.
 
 ## Integralność prototypu
 
@@ -30,7 +33,14 @@ SHA-256: 881dade6c6c506b9a9d41ebfbf68afb18b66db7583d35f746fb29ed7b36ac596
 Rozmiar: 51980 B
 ```
 
-Instrukcja odtworzenia: `sources/prototype/RESTORE.md`.
+Zalecana kontrola i odtworzenie:
+
+```bash
+python scripts/restore_v2.py --check-only
+python scripts/restore_v2.py
+```
+
+Instrukcja alternatywna: `sources/prototype/RESTORE.md`.
 
 ## Pochodzenie
 
@@ -58,6 +68,7 @@ Zabezpieczono:
 - kluczowe decyzje użytkownika;
 - pomysły post-MVP z warunkami powrotu;
 - dowody działania poprzednich procesów;
-- główne sprzeczności i braki źródłowe.
+- główne sprzeczności i braki źródłowe;
+- wynik niezależnego testu ciągłości.
 
 Nie istnieje dostępny dowód późniejszej implementacji lub odpowiedzi Codex powstałej po Final Master Package. Ta niewiedza nie została ukryta; pozostaje aktywną blokadą `ACCESS CHECK REQUIRED`.
