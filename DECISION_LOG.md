@@ -1,16 +1,25 @@
 # DECISION_LOG
 
+Ten plik przechowuje wyłącznie decyzje semantyczne: cel, zakres, kanon, aktywację, kolejność pracy i świadome wyłączenia. Zwykłe zmiany techniczne należą do historii Git.
+
+Nowy wpis powinien, gdy to możliwe, wskazać:
+
+- `Evidence` — dowód lub źródło decyzji;
+- `Implemented by` — commit lub PR realizujący decyzję.
+
+Brak takiego odnośnika nie unieważnia starszej decyzji, ale nie wolno tworzyć osobnego wpisu tylko po to, aby opisać techniczny diff.
+
 ## DEC-SO-001 — człowiek pozostaje właścicielem kanonu
 
 Status: `ACTIVE`
 
-AI tworzy kandydatów i analizy. Nie zatwierdza, nie commituje i nie zmienia samodzielnie kanonu.
+AI tworzy kandydatów i analizy. Nie zatwierdza i nie zmienia samodzielnie kanonu. Techniczne commity mogą realizować wcześniej zatwierdzoną decyzję, ale nie stanowią nowej decyzji kierunkowej.
 
 ## DEC-SO-002 — lokalne źródło prawdy
 
 Status: `ACTIVE`
 
-Szczegółowy stan ScriptOps należy do prywatnego repo `litrgratis-pixel/scriptops`. `PROJECT_STATE.md` jest kanonicznym stanem operacyjnym.
+Szczegółowy stan ScriptOps należy do repo `litrgratis-pixel/scriptops`. `PROJECT_STATE.md` jest kanonicznym stanem operacyjnym.
 
 ## DEC-SO-003 — zakres RC1
 
@@ -36,7 +45,7 @@ Status: `ACTIVE`
 
 Status: `ACTIVE`
 
-Decyzja o bazie implementacji wymaga porównania `scriptops-v2-single.py` z `RC1_SCOPE_LOCK.md`.
+Decyzja o bazie implementacji wymaga porównania `legacy/scriptops-v2-single.py` z `sources/RC1_SCOPE_LOCK.md`.
 
 ## DEC-SO-007 — kolejność pracy
 
@@ -53,3 +62,13 @@ Status: `ACTIVE`
 Status: `ACTIVE`
 
 ScriptOps pozostaje `QUEUED #1 / NOT ACTIVATED`. Rekonstrukcja i zabezpieczenie repo nie oznaczają rozpoczęcia implementacji.
+
+## DEC-SO-009 — pojedyncza kanoniczna kopia prototypu v2
+
+Status: `ACTIVE`
+
+Pełny historyczny prototyp jest dostępny jako `legacy/scriptops-v2-single.py`. Siedem części w `sources/prototype/` pozostaje zapisem transportowym i dowodem odtwarzalności, ale nie jest drugim kanonicznym plikiem roboczym.
+
+Evidence: niezależny cold start wykazał tarcie wynikające z konieczności ręcznego składania pliku.
+
+Implemented by: PR wprowadzający usprawnienia Lean po audytach ciągłości.
