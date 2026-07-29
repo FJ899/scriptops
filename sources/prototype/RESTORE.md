@@ -2,7 +2,35 @@
 
 Pełny plik `scriptops-v2-single.py` został zapisany w siedmiu częściach tekstowych, aby zachować go w repo bez zależności od poprzedniego czatu.
 
-## Linux / macOS / Git Bash
+## Zalecana metoda automatyczna
+
+W katalogu głównym repo uruchom:
+
+```bash
+python scripts/restore_v2.py
+```
+
+Skrypt:
+
+1. sprawdza obecność siedmiu części;
+2. łączy je w `scriptops-v2-single.py`;
+3. sprawdza SHA-256;
+4. sprawdza poprawność UTF-8 i składni Python;
+5. nie zastępuje istniejącego pliku o innej treści bez `--force`.
+
+Sama kontrola bez zapisu pliku:
+
+```bash
+python scripts/restore_v2.py --check-only
+```
+
+Odtworzenie do innej lokalizacji:
+
+```bash
+python scripts/restore_v2.py --output /tmp/scriptops-v2-single.py
+```
+
+## Metoda ręczna — Linux / macOS / Git Bash
 
 ```bash
 cat sources/prototype/scriptops-v2-single.py.part01 \
@@ -15,7 +43,7 @@ cat sources/prototype/scriptops-v2-single.py.part01 \
     > scriptops-v2-single.py
 ```
 
-## PowerShell
+## Metoda ręczna — PowerShell
 
 ```powershell
 $parts = 1..7 | ForEach-Object {
