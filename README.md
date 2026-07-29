@@ -35,13 +35,31 @@ Do rozstrzygania sporów lub sprawdzania pochodzenia decyzji użyć `SOURCE_AUDI
 python scripts/verify_repository.py
 ```
 
-Walidator sprawdza wymagane pliki, spójność statusów, źródła RC1, archiwum pomysłów oraz odtwarza prototyp v2 do katalogu tymczasowego, kontrolując jego SHA-256 i składnię.
+Walidator sprawdza wymagane pliki, spójność statusów, maszynowy nagłówek handoffu, źródła RC1, archiwum pomysłów oraz pełny prototyp v2. Kontroluje również, czy `legacy/scriptops-v2-single.py` jest identyczny z wersją odtworzoną z historycznych części, ma właściwy SHA-256, rozmiar i poprawną składnię.
 
-Ręczne odtworzenie prototypu:
+Kanoniczny historyczny prototyp:
+
+```text
+legacy/scriptops-v2-single.py
+```
+
+Awaryjne odtworzenie z części transportowych:
 
 ```bash
-python scripts/restore_v2.py
+python scripts/restore_v2.py --force
 ```
+
+## Zasada zmian
+
+Pull request dodający nową funkcję lub regułę powinien wskazać:
+
+- konkretny problem albo porażkę;
+- dlaczego obecny mechanizm nie wystarcza;
+- obserwowalny dowód zaliczenia;
+- nowy koszt utrzymania;
+- elementy pozostające poza zakresem.
+
+Nie wymaga tego zwykła korekta techniczna, która nie zmienia zachowania ani stanu projektu.
 
 ## Audyt ciągłości
 
@@ -51,4 +69,4 @@ Pierwszy niezależny cold start bez pamięci wcześniejszej rozmowy zapisano w `
 
 Sprawdzić, czy istnieje późniejsze repozytorium, kod albo wynik pracy Codex zgodny z `sources/RC1_SCOPE_LOCK.md`.
 
-Jeżeli nie istnieje, porównać odtworzony prototyp `scriptops-v2-single.py` z zakresem RC1 przed decyzją, czy prototyp jest bazą implementacji.
+Jeżeli nie istnieje, porównać `legacy/scriptops-v2-single.py` z zakresem RC1 przed decyzją, czy prototyp jest bazą implementacji.
