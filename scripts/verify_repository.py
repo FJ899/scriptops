@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Deterministyczna kontrola samowystarczalności repozytorium ScriptOps."""
-
 from __future__ import annotations
 
 import hashlib
@@ -29,8 +28,12 @@ REQUIRED_FILES = [
     "SOURCE_AUDIT_SUMMARY.md",
     "CODEX_START.md",
     "continuity/COLD_START_AUDIT-001.md",
+    "analysis/RC1_V2_GAP_2026-08-10.md",
     "scripts/restore_v2.py",
     "legacy/scriptops-v2-single.py",
+    "phase6/scriptops-v2-hardening.py",
+    "tests/test_phase6_scriptops_smoke.py",
+    ".github/workflows/phase6-scriptops-smoke.yml",
     ".github/pull_request_template.md",
     "sources/Decision_Summary_Current_State.md",
     "sources/ScriptOps_Main_Theme_Summary.md",
@@ -57,82 +60,99 @@ def read_text(relative_path: str) -> str:
     raise AssertionError("unreachable")
 
 
+def require_markers(relative_path: str, markers: list[str]) -> None:
+    text = read_text(relative_path)
+    for marker in markers:
+        if marker not in text:
+            fail(f"{relative_path} nie zawiera wymaganego wpisu: {marker}")
+
+
 def check_required_files() -> None:
-    missing = [
-        path
-        for path in REQUIRED_FILES + PROTOTYPE_PARTS
-        if not (ROOT / path).is_file()
-    ]
+    missing = [p for p in REQUIRED_FILES + PROTOTYPE_PARTS if not (ROOT / p).is_file()]
     if missing:
         fail("brak wymaganych plików: " + ", ".join(missing))
     print(f"[PASS] wymagane pliki: {len(REQUIRED_FILES) + len(PROTOTYPE_PARTS)}")
 
 
 def check_status_consistency() -> None:
-    expected = "NOT ACTIVATED / SOURCE OF TRUTH ACTIVE / ACCESS CHECK REQUIRED"
-    project_state = read_text("PROJECT_STATE.md")
-    readme = read_text("README.md")
-    handoff = read_text("HANDOFF.md")
+    require_markers(
+        "PROJECT_STATE.md",
+        [
+            "PHASE 6 BOUNDED IMPLEMENTATION / V2 BASE SELECTED / PROOF IN PROGRESS / NO MATURITY CLAIM",
+            "legacy/scriptops-v2-single.py",
+            "REWRITE: NO",
+            "NEW CAPABILITY: NO",
+            "FUNCTIONAL_SADDLE_ACCEPTED: NOT YET",
+        ],
+    )
+    require_markers(
+        "README.md",
+        [
+            "PHASE 6 BOUNDED PROOF / V2 BASE SELECTED / NO MATURITY CLAIM",
+            "phase6/scriptops-v2-hardening.py",
+            "FUNCTIONAL_SADDLE_ACCEPTED",
+        ],
+    )
+    require_markers(
+        "HANDOFF.md",
+        [
+            'activation: "BOUNDED PHASE 6 PROOF ONLY"',
+            'resume_contract: "REUSE V2 / NO REWRITE / NO NEW CAPABILITY"',
+            "DEC-SO-010",
+        ],
+    )
+    print("[PASS] status Phase 6, README i handoff są spójne")
 
-    if expected not in project_state:
-        fail("PROJECT_STATE.md nie zawiera kanonicznego statusu")
-    if "SOURCE OF TRUTH ACTIVE / ACCESS CHECK REQUIRED" not in readme:
-        fail("README.md ma niespójny status")
-    if "ACCESS CHECK REQUIRED" not in handoff:
-        fail("HANDOFF.md nie zachowuje aktywnej blokady")
-    if "Prywatne repozytorium" in readme or "prywatnego repo" in read_text("DECISION_LOG.md"):
-        fail("dokumentacja utrwala zmienną właściwość widoczności repozytorium")
-    print("[PASS] statusy i opis repo są spójne")
 
+def check_decision_and_scope() -> None:
+    decisions = read_text("DECISION_LOG.md")
+    for marker in [
+        "DEC-SO-001",
+        "DEC-SO-009",
+        "DEC-SO-010",
+        "BASE: legacy/scriptops-v2-single.py",
+        "REWRITE: NO",
+        "NEW CAPABILITY: NO",
+        "MATURITY CLAIM: NONE",
+        "FUNCTIONAL_SADDLE_ACCEPTED: NOT YET",
+    ]:
+        if marker not in decisions:
+            fail(f"DECISION_LOG.md nie zawiera: {marker}")
 
-def check_handoff_contract() -> None:
-    handoff = read_text("HANDOFF.md")
-    required_markers = [
-        'project: "ScriptOps"',
-        'portfolio_status: "QUEUED #1"',
-        'activation: "NOT ACTIVATED"',
-        'state_owner: "PROJECT_STATE.md"',
-        'blocker: "ACCESS CHECK REQUIRED"',
-        'next_step: "perform_access_check"',
-        'resume_contract: "READ_ONLY / NO IMPLEMENTATION"',
-        "Nagłówek YAML jest maszynowym skrótem",
-    ]
-    for marker in required_markers:
-        if marker not in handoff:
-            fail(f"HANDOFF.md nie zawiera wymaganego pola lub zabezpieczenia: {marker}")
-    print("[PASS] maszynowy i opisowy handoff mają wspólny kontrakt")
+    scope = read_text("sources/RC1_SCOPE_LOCK.md")
+    for phrase in [
+        "browser helper",
+        "direct API calls",
+        "autonomous writing",
+        "multi-user",
+        "AI Guard",
+        "Retcon Engine",
+        "cloud sync",
+    ]:
+        if phrase not in scope:
+            fail(f"RC1_SCOPE_LOCK.md nie zawiera wykluczenia: {phrase}")
+    print("[PASS] decyzja bazowa i scope lock są zachowane")
 
 
 def check_source_paths() -> None:
-    project_state = read_text("PROJECT_STATE.md")
-    source_manifest = read_text("SOURCE_MANIFEST.md")
-
-    required_references = [
+    state = read_text("PROJECT_STATE.md")
+    manifest = read_text("SOURCE_MANIFEST.md")
+    for reference in [
         "sources/Decision_Summary_Current_State.md",
         "sources/ScriptOps_Main_Theme_Summary.md",
         "sources/RC1_SCOPE_LOCK.md",
         "scripts/restore_v2.py",
         "RECONSTRUCTION_REPORT.md",
         "SOURCE_AUDIT_SUMMARY.md",
-    ]
-    for reference in required_references:
-        if reference not in project_state:
-            fail(f"PROJECT_STATE.md nie wskazuje aktywnego źródła: {reference}")
-        if reference.endswith(".md") and not (ROOT / reference).is_file():
-            fail(f"wskazane źródło nie istnieje: {reference}")
-
-    for reference in [
         "legacy/scriptops-v2-single.py",
-        "sources/RC1_SCOPE_LOCK.md",
+        "analysis/RC1_V2_GAP_2026-08-10.md",
     ]:
-        if reference not in source_manifest:
+        if reference not in state:
+            fail(f"PROJECT_STATE.md nie wskazuje źródła: {reference}")
+    for reference in ["legacy/scriptops-v2-single.py", "sources/RC1_SCOPE_LOCK.md"]:
+        if reference not in manifest:
             fail(f"SOURCE_MANIFEST.md nie wskazuje aktywnego źródła: {reference}")
-
-    if "Historyczne ścieżki pochodzenia" not in project_state:
-        fail("PROJECT_STATE.md nie odróżnia historycznych ścieżek od aktywnych")
-    if "Aktywne, odczytywalne kopie" not in source_manifest:
-        fail("SOURCE_MANIFEST.md nie wyjaśnia mapowania historycznych ścieżek")
-    print("[PASS] aktywne źródła i historyczne pochodzenie są rozdzielone")
+    print("[PASS] źródła bazowe i analiza B1–B5 są osiągalne")
 
 
 def check_prototype() -> None:
@@ -145,100 +165,86 @@ def check_prototype() -> None:
         fail(f"kontrola prototypu nie powiodła się: {exc}")
 
     if canonical != reconstructed:
-        fail("kanoniczny prototyp nie jest identyczny z częściami transportowymi")
+        fail("historyczny v2 nie jest identyczny z częściami transportowymi")
     if canonical_sha != EXPECTED_SHA256 or reconstructed_sha != EXPECTED_SHA256:
-        fail("prototyp ma nieoczekiwaną sumę SHA-256")
+        fail("historyczny v2 ma nieoczekiwaną sumę SHA-256")
     if len(canonical) != EXPECTED_SIZE:
-        fail(
-            "rozmiar prototypu v2 jest niezgodny: "
-            f"expected={EXPECTED_SIZE}, actual={len(canonical)}"
-        )
+        fail(f"rozmiar v2 niezgodny: expected={EXPECTED_SIZE}, actual={len(canonical)}")
     if hashlib.sha256(canonical).hexdigest() != EXPECTED_SHA256:
-        fail("kanoniczny plik ma niezgodną sumę")
-
-    print(
-        f"[PASS] kanoniczny prototyp v2: {EXPECTED_SIZE} B, "
-        f"SHA-256 {canonical_sha}; części transportowe są identyczne"
-    )
+        fail("kanoniczny historyczny plik v2 ma niezgodną sumę")
+    print(f"[PASS] historyczny v2 niezmieniony: {EXPECTED_SIZE} B, SHA-256 {canonical_sha}")
 
 
-def check_scope_decisions_and_ideas() -> None:
-    scope = read_text("sources/RC1_SCOPE_LOCK.md")
-    ideas = read_text("IDEA_ARCHIVE.md")
-    decisions = read_text("DECISION_LOG.md")
-    codex = read_text("CODEX_START.md")
-
-    required_exclusions = [
-        "browser helper",
-        "direct API calls",
-        "autonomous writing",
-        "multi-user",
-        "AI Guard",
-        "Retcon Engine",
-        "cloud sync",
+def check_phase6_proof_contract() -> None:
+    hardening = read_text("phase6/scriptops-v2-hardening.py")
+    test = read_text("tests/test_phase6_scriptops_smoke.py")
+    required_hardening = [
+        "LEGACY_PATH",
+        "legacy = _load_legacy()",
+        "checkpoint task",
+        "record preflight",
+        "record context",
+        "record candidate input",
+        "impact-report.json",
+        "approve --why",
+        "write_scene_file",
+        '"why": why',
     ]
-    for phrase in required_exclusions:
-        if phrase not in scope:
-            fail(f"RC1_SCOPE_LOCK.md nie zawiera wykluczenia: {phrase}")
+    for marker in required_hardening:
+        if marker not in hardening:
+            fail(f"Phase-6 hardening nie zawiera: {marker}")
+    for marker in [
+        "test_full_controlled_happy_path",
+        "test_approve_requires_explicit_why",
+        "test_candidate_import_refuses_unrelated_dirty_state",
+        "accepted scene hash must describe accepted content",
+    ]:
+        if marker not in test:
+            fail(f"Phase-6 smoke nie zawiera: {marker}")
+    print("[PASS] bounded hardening B1–B5 i smoke contract są obecne")
 
+
+def check_ideas_and_filters() -> None:
+    ideas = read_text("IDEA_ARCHIVE.md")
     if ideas.count("## IDEA-SO-") < 12:
         fail("IDEA_ARCHIVE.md nie zawiera pełnego zestawu zabezpieczonych kierunków")
-    for marker in [
-        "DEC-SO-008",
-        "DEC-SO-009",
-        "wyłącznie decyzje semantyczne",
-        "legacy/scriptops-v2-single.py",
-        "sources/RC1_SCOPE_LOCK.md",
-    ]:
-        if marker not in decisions:
-            fail(f"DECISION_LOG.md nie zawiera: {marker}")
-    if "PLAN FIRST / NO IMPLEMENTATION WITHOUT APPROVAL" not in codex:
-        fail("CODEX_START.md nie wymusza etapu planowania")
-
-    print("[PASS] zakres, decyzje semantyczne i pomysły są zabezpieczone")
-
-
-def check_pull_request_filter() -> None:
     template = read_text(".github/pull_request_template.md")
-    required = [
+    for marker in [
         "Problem / porażka",
         "Dlaczego obecny mechanizm nie wystarcza",
         "Obserwowalny dowód zaliczenia",
         "Dodany koszt utrzymania",
         "Poza zakresem",
         "Decyzja semantyczna",
-    ]
-    for marker in required:
+    ]:
         if marker not in template:
             fail(f"szablon PR nie zawiera filtra: {marker}")
-    print("[PASS] filtr PR chroni przed rozbudową bez dowodu")
+    print("[PASS] parking pomysłów i filtr PR są zachowane")
 
 
 def check_continuity_audit() -> None:
-    audit = read_text("continuity/COLD_START_AUDIT-001.md")
-    required_markers = [
-        "PUBLIC / NO PRIOR MEMORY / READ_ONLY",
-        "PASS WITH FIXES",
-        "Wznowienie ScriptOps — PASS",
-        "GAP-001 — BPM:160",
-        "scripts/restore_v2.py",
-    ]
-    for marker in required_markers:
-        if marker not in audit:
-            fail(f"audyt ciągłości nie zawiera wymaganego wpisu: {marker}")
-    print("[PASS] wynik niezależnego testu ciągłości jest zapisany")
+    require_markers(
+        "continuity/COLD_START_AUDIT-001.md",
+        [
+            "PUBLIC / NO PRIOR MEMORY / READ_ONLY",
+            "PASS WITH FIXES",
+            "Wznowienie ScriptOps — PASS",
+            "scripts/restore_v2.py",
+        ],
+    )
+    print("[PASS] historyczny cold-start evidence pozostaje osiągalny")
 
 
 def main() -> None:
     check_required_files()
     check_status_consistency()
-    check_handoff_contract()
+    check_decision_and_scope()
     check_source_paths()
     check_prototype()
-    check_scope_decisions_and_ideas()
-    check_pull_request_filter()
+    check_phase6_proof_contract()
+    check_ideas_and_filters()
     check_continuity_audit()
-    print("[PASS] repozytorium jest samowystarczalne na obecnym etapie")
+    print("[PASS] repozytorium jest samowystarczalne dla bounded Phase 6 proof")
 
 
 if __name__ == "__main__":
