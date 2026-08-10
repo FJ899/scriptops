@@ -29,6 +29,7 @@ REQUIRED_FILES = [
     "CODEX_START.md",
     "continuity/COLD_START_AUDIT-001.md",
     "analysis/RC1_V2_GAP_2026-08-10.md",
+    "evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md",
     "scripts/restore_v2.py",
     "legacy/scriptops-v2-single.py",
     "phase6/scriptops-v2-hardening.py",
@@ -41,9 +42,7 @@ REQUIRED_FILES = [
     "sources/prototype/RESTORE.md",
 ]
 
-PROTOTYPE_PARTS = [
-    f"sources/prototype/scriptops-v2-single.py.part{i:02d}" for i in range(1, 8)
-]
+PROTOTYPE_PARTS = [f"sources/prototype/scriptops-v2-single.py.part{i:02d}" for i in range(1, 8)]
 
 
 def fail(message: str) -> None:
@@ -52,9 +51,8 @@ def fail(message: str) -> None:
 
 
 def read_text(relative_path: str) -> str:
-    path = ROOT / relative_path
     try:
-        return path.read_text(encoding="utf-8")
+        return (ROOT / relative_path).read_text(encoding="utf-8")
     except UnicodeDecodeError as exc:
         fail(f"{relative_path} nie jest poprawnym UTF-8: {exc}")
     raise AssertionError("unreachable")
@@ -78,17 +76,18 @@ def check_status_consistency() -> None:
     require_markers(
         "PROJECT_STATE.md",
         [
-            "PHASE 6 BOUNDED IMPLEMENTATION / V2 BASE SELECTED / PROOF IN PROGRESS / NO MATURITY CLAIM",
+            "PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / NO MATURITY CLAIM / SADDLE LIVE MODEL EVIDENCE NEXT",
             "legacy/scriptops-v2-single.py",
             "REWRITE: NO",
             "NEW CAPABILITY: NO",
             "FUNCTIONAL_SADDLE_ACCEPTED: NOT YET",
+            "evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md",
         ],
     )
     require_markers(
         "README.md",
         [
-            "PHASE 6 BOUNDED PROOF / V2 BASE SELECTED / NO MATURITY CLAIM",
+            "PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / NO MATURITY CLAIM",
             "phase6/scriptops-v2-hardening.py",
             "FUNCTIONAL_SADDLE_ACCEPTED",
         ],
@@ -96,12 +95,12 @@ def check_status_consistency() -> None:
     require_markers(
         "HANDOFF.md",
         [
-            'activation: "BOUNDED PHASE 6 PROOF ONLY"',
-            'resume_contract: "REUSE V2 / NO REWRITE / NO NEW CAPABILITY"',
+            'activation: "BOUNDED PHASE 6 PROOF COMPLETE"',
+            'resume_contract: "REUSE V2 / NO REWRITE / NO NEW CAPABILITY / NO MATURITY CLAIM"',
             "DEC-SO-010",
         ],
     )
-    print("[PASS] status Phase 6, README i handoff są spójne")
+    print("[PASS] finalny status Phase 6, README i handoff są spójne")
 
 
 def check_decision_and_scope() -> None:
@@ -178,7 +177,8 @@ def check_prototype() -> None:
 def check_phase6_proof_contract() -> None:
     hardening = read_text("phase6/scriptops-v2-hardening.py")
     test = read_text("tests/test_phase6_scriptops_smoke.py")
-    required_hardening = [
+    evidence = read_text("evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md")
+    for marker in [
         "LEGACY_PATH",
         "legacy = _load_legacy()",
         "checkpoint task",
@@ -189,8 +189,7 @@ def check_phase6_proof_contract() -> None:
         "approve --why",
         "write_scene_file",
         '"why": why',
-    ]
-    for marker in required_hardening:
+    ]:
         if marker not in hardening:
             fail(f"Phase-6 hardening nie zawiera: {marker}")
     for marker in [
@@ -201,7 +200,15 @@ def check_phase6_proof_contract() -> None:
     ]:
         if marker not in test:
             fail(f"Phase-6 smoke nie zawiera: {marker}")
-    print("[PASS] bounded hardening B1–B5 i smoke contract są obecne")
+    for marker in [
+        "CONTROLLED WORKFLOW MECHANISM PASS / NO MATURITY CLAIM",
+        "31421551632",
+        "31421551982",
+        "FUNCTIONAL_SADDLE_ACCEPTED",
+    ]:
+        if marker not in evidence:
+            fail(f"Phase-6 evidence nie zawiera: {marker}")
+    print("[PASS] bounded hardening B1–B5, smoke i evidence contract są obecne")
 
 
 def check_ideas_and_filters() -> None:
@@ -244,7 +251,7 @@ def main() -> None:
     check_phase6_proof_contract()
     check_ideas_and_filters()
     check_continuity_audit()
-    print("[PASS] repozytorium jest samowystarczalne dla bounded Phase 6 proof")
+    print("[PASS] repozytorium jest samowystarczalne po bounded Phase 6 proof")
 
 
 if __name__ == "__main__":
