@@ -4,7 +4,9 @@ Repozytorium lokalnego stanu projektu **Narzędzie pisarskie / ScriptOps**.
 
 ## Status
 
-`QUEUED #1 / NOT ACTIVATED / SOURCE OF TRUTH ACTIVE / ACCESS CHECK REQUIRED`
+`PHASE 6 BOUNDED PROOF / V2 BASE SELECTED / NO MATURITY CLAIM`
+
+Jawna decyzja użytkownika: `legacy/scriptops-v2-single.py` jest bazą pierwszego kontrolowanego workflow. `REWRITE: NO`. `NEW CAPABILITY: NO`.
 
 ## Uruchomienie nowej sesji
 
@@ -14,20 +16,49 @@ Nowe AI ma przeczytać w tej kolejności:
 2. `PROJECT_STATE.md`
 3. `HANDOFF.md`
 4. `DECISION_LOG.md`
-5. `IDEA_ARCHIVE.md`
-6. `SOURCE_MANIFEST.md`
-7. `RECONSTRUCTION_REPORT.md`
-
-Do rozstrzygania sporów lub sprawdzania pochodzenia decyzji użyć `SOURCE_AUDIT_SUMMARY.md`, `SOURCE_MANIFEST.md` i materiałów w `sources/`.
+5. `analysis/RC1_V2_GAP_2026-08-10.md`
+6. `IDEA_ARCHIVE.md`
+7. `SOURCE_MANIFEST.md`
+8. `RECONSTRUCTION_REPORT.md`
 
 ## Zasady nadrzędne
 
 - odpowiedź AI jest kandydatem, nie prawdą projektu;
 - zmiana kanonu wymaga walidacji, decyzji człowieka, uzasadnienia i zapisu w Git;
+- candidate artifact nie jest jeszcze kanonicznym efektem;
+- kanoniczny zapis Phase 6 następuje dopiero po `approve --why`;
 - obecny etap nie obejmuje budowy pełnej wizji ScriptOps v5;
-- nie wolno uznać specyfikacji za działający produkt bez dowodu wykonania;
-- nie wolno automatycznie aktywować projektu ani rozszerzać zakresu RC1;
-- pełne rozmowy i dane prywatne pozostają poza aktywnym drzewem; repo zawiera minimalny, odtwarzalny pakiet dowodowy.
+- nie wolno uznać specyfikacji albo smoke testu za maturity claim;
+- nie wolno rozszerzać zakresu o nowe capability;
+- pełne rozmowy i dane prywatne pozostają poza aktywnym drzewem.
+
+## Phase 6 — reuse + hardening + proof
+
+Wybrana historyczna baza:
+
+```text
+legacy/scriptops-v2-single.py
+```
+
+Historyczny plik pozostaje niezmieniony jako źródło i dowód v2. Ograniczony hardening:
+
+```text
+phase6/scriptops-v2-hardening.py
+```
+
+zamyka wyłącznie B1–B5:
+
+1. task clean-tree checkpoint;
+2. generated evidence/candidate-input lifecycle;
+3. accepted hash;
+4. mandatory human `why`;
+5. impact report + smoke proof.
+
+Test:
+
+```bash
+python -m unittest discover -s tests -p 'test_phase6_*.py' -v
+```
 
 ## Kontrola repozytorium
 
@@ -35,31 +66,17 @@ Do rozstrzygania sporów lub sprawdzania pochodzenia decyzji użyć `SOURCE_AUDI
 python scripts/verify_repository.py
 ```
 
-Walidator sprawdza wymagane pliki, spójność statusów, maszynowy nagłówek handoffu, źródła RC1, archiwum pomysłów oraz pełny prototyp v2. Kontroluje również, czy `legacy/scriptops-v2-single.py` jest identyczny z wersją odtworzoną z historycznych części, ma właściwy SHA-256, rozmiar i poprawną składnię.
+Walidator sprawdza trwałe źródła, spójność aktualnego statusu/handoffu, scope lock, decyzje, odtwarzalność pełnego historycznego v2 oraz obecność bounded Phase-6 proof path.
 
-Kanoniczny historyczny prototyp:
-
-```text
-legacy/scriptops-v2-single.py
-```
-
-Awaryjne odtworzenie z części transportowych:
+Awaryjne odtworzenie historycznego v2:
 
 ```bash
 python scripts/restore_v2.py --force
 ```
 
-## Zasada zmian
+## Zakaz rozbudowy w Phase 6
 
-Pull request dodający nową funkcję lub regułę powinien wskazać:
-
-- konkretny problem albo porażkę;
-- dlaczego obecny mechanizm nie wystarcza;
-- obserwowalny dowód zaliczenia;
-- nowy koszt utrzymania;
-- elementy pozostające poza zakresem.
-
-Nie wymaga tego zwykła korekta techniczna, która nie zmienia zachowania ani stanu projektu.
+Nie dodawać browser helpera, direct model/API automation, autonomous approval, agent framework, multi-agent, GUI/dashboard, vector DB, semantic graph ani multi-user.
 
 ## Audyt ciągłości
 
@@ -67,6 +84,6 @@ Pierwszy niezależny cold start bez pamięci wcześniejszej rozmowy zapisano w `
 
 ## Aktualny następny krok
 
-Sprawdzić, czy istnieje późniejsze repozytorium, kod albo wynik pracy Codex zgodny z `sources/RC1_SCOPE_LOCK.md`.
+Doprowadzić PR Phase 6 do zielonego end-to-end smoke i repository continuity verification. Dopiero wtedy zapisać końcowe evidence B1–B5 i scalić bounded hardening.
 
-Jeżeli nie istnieje, porównać `legacy/scriptops-v2-single.py` z zakresem RC1 przed decyzją, czy prototyp jest bazą implementacji.
+`FUNCTIONAL_SADDLE_ACCEPTED`: **NOT YET**.
