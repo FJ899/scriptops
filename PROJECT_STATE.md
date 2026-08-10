@@ -2,7 +2,7 @@
 project: "Narzędzie pisarskie / ScriptOps"
 canonical_name: "ScriptOps"
 cos_status: "QUEUED #1"
-status: "PHASE 6 BOUNDED IMPLEMENTATION / V2 BASE SELECTED / PROOF IN PROGRESS / NO MATURITY CLAIM"
+status: "PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / NO MATURITY CLAIM / SADDLE LIVE MODEL EVIDENCE NEXT"
 reconstructed_at: "2026-07-27"
 updated_at: "2026-08-10"
 state_owner: "PROJECT_STATE.md"
@@ -12,7 +12,7 @@ state_owner: "PROJECT_STATE.md"
 
 ## 1. Aktualny rezultat
 
-Empirycznie sprawdzić najmniejszą pętlę ScriptOps opartą na istniejącym v2:
+Najmniejsza pętla ScriptOps oparta na istniejącym v2 została technicznie udowodniona jako kontrolowany mechanizm:
 
 ```text
 task
@@ -26,7 +26,7 @@ task
 → Git commit
 ```
 
-Celem Phase 6 nie jest budowa pełnej wizji ScriptOps v5 ani ogólna aktywacja produktu.
+To jest `CONTROLLED WORKFLOW MECHANISM PASS`, nie maturity claim i nie pełny ScriptOps v5 RC1.
 
 ## 2. Definicja projektu
 
@@ -40,9 +40,10 @@ AI tworzy kandydatów. ScriptOps przygotowuje kontekst, kontroluje strukturę i 
 2. Mądry Warsztat / S2 Studio uporządkował role, stan, recenzję i przekazywanie artefaktów.
 3. ScriptOps v2 przeniósł część mechanizmów do lokalnego CLI.
 4. ScriptOps WebAI v5 rozszerzył specyfikację do systemu kontroli prawdy.
-5. Final Master Package zamknął zakres MVP RC1 i przygotował instrukcje implementacyjne dla Codex.
-6. GitHub-side access check nie znalazł późniejszego RC1 builda; analiza v2 wskazała pięć konkretnych blockerów jednego happy-pathu.
-7. 2026-08-10 człowiek jawnie wybrał v2 jako bazę Saddle Phase 6: reuse + hardening + proof, bez rewrite i bez nowych capability.
+5. Final Master Package zamknął zakres MVP RC1.
+6. GitHub-side access check nie znalazł późniejszego RC1 builda; analiza v2 wskazała B1–B5.
+7. 2026-08-10 człowiek wybrał v2 jako bazę Saddle Phase 6: reuse + hardening + proof, bez rewrite i nowych capability.
+8. PR #7 udowodnił bounded workflow smoke oraz repository continuity verification.
 
 ## 4. Aktualne decyzje użytkownika
 
@@ -50,24 +51,22 @@ Obowiązują `DEC-SO-001`…`DEC-SO-010`, w szczególności:
 
 - człowiek pozostaje właścicielem kanonu i decyzji;
 - AI tworzy kandydatów, nie zatwierdza kanonu;
-- `legacy/scriptops-v2-single.py` jest wybraną bazą Phase 6;
+- `legacy/scriptops-v2-single.py` jest bazą Phase 6;
 - `REWRITE: NO`;
 - `NEW CAPABILITY: NO`;
 - Phase 6 = `reuse + hardening + proof`;
 - `MATURITY CLAIM: NONE`;
 - `FUNCTIONAL_SADDLE_ACCEPTED: NOT YET`.
 
-## 5. Zamrożony zakres Phase 6
+## 5. Zamknięty zakres B1–B5
 
-Naprawiamy tylko B1–B5 z `analysis/RC1_V2_GAP_2026-08-10.md`:
+1. **B1 lifecycle / dirty tree:** task jest trwałym Git checkpointem przed preflight.
+2. **B2 artefakty przed approval:** preflight/context/candidate input/impact są jawnie checkpointowane; unrelated dirty state blokuje.
+3. **B3 accepted hash:** accepted scene hash jest liczony po zmianie statusu.
+4. **B4 human why:** `approve --why` jest obowiązkowe i trafia do decision logu.
+5. **B5 impact + smoke:** `impact-report.json` istnieje przed human decision; pełna ścieżka jest testowana w świeżym tymczasowym repo Git.
 
-1. lifecycle / dirty-tree checkpoint po utworzeniu taska;
-2. lifecycle artefaktów preflight/context/candidate przed approval;
-3. przeliczenie accepted scene hash po zmianie `candidate -> accepted`;
-4. obowiązkowe ludzkie `why` przed kanonicznym zapisem;
-5. minimalny impact report + deterministyczny smoke proof.
-
-Wyłączone pozostają browser helper, integracja API/model automation, autonomiczny agent/approval, AI Guard, graf semantyczny, pełny IdeaOps, dashboard/GUI, eksport, vector DB, multi-user, agent framework i multi-agent.
+Evidence: `evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md`.
 
 ## 6. Model odpowiedzialności w tym slice
 
@@ -85,56 +84,51 @@ ScriptOps nie dostaje własnej interpretacji intencji, własnej effect authority
 
 Historyczny `legacy/scriptops-v2-single.py` pozostaje niezmienionym źródłem bazowym i dowodem v2.
 
-`phase6/scriptops-v2-hardening.py` ładuje go jako execution substrate i dodaje tylko audytowalne checkpointy B1–B5. To jest hardening shim, nie nowy produkt i nie rewrite.
+`phase6/scriptops-v2-hardening.py` ładuje go jako execution substrate i dodaje wyłącznie audytowalne checkpointy B1–B5. To hardening shim, nie nowy produkt i nie rewrite.
 
-Smoke proof: `tests/test_phase6_scriptops_smoke.py`.
-CI: `.github/workflows/phase6-scriptops-smoke.yml`.
+Proof:
+- `tests/test_phase6_scriptops_smoke.py`;
+- `.github/workflows/phase6-scriptops-smoke.yml`;
+- `scripts/verify_repository.py`;
+- `evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md`.
 
-## 8. Potwierdzone wcześniejsze rezultaty
+## 8. Zweryfikowane wyniki PR #7
 
-- workflow B3 → B2 → RR doprowadził do kompletnego pakietu pierwszego sezonu „Przygód Liścionka”;
-- S2 Studio doprowadziło do zaakceptowanego working draftu E01;
-- E02 przeszedł review jako PASS WITH MINOR FIX;
-- historyczny v2 uruchamia się i posiada CLI/Git/task/context/validation/staging/approval/decision-log mechanics;
-- GitHub-side access check jest zakończony;
-- v2-vs-RC1 gap jest ograniczony dla Phase 6 do B1–B5.
+Na head `f5560719530ffe07c5f61524007839431eee43e1` zaobserwowano jednocześnie:
+
+- `Phase 6 ScriptOps smoke` run `31421551632` → `success`;
+- `Verify repository state` run `31421551982` → `success`.
+
+Finalny head po zapisaniu evidence/statusu musi również pozostać zielony przed merge.
 
 ## 9. Czego nadal nie wolno twierdzić
 
-- brak dowodu pełnego ScriptOps v5 RC1;
-- brak niezależnego testu z realnym użytkownikiem;
-- brak ogólnej aktywacji ScriptOps;
-- brak maturity claim;
-- brak `FUNCTIONAL_SADDLE_ACCEPTED`;
-- lokalne/off-GitHub późniejsze artefakty nadal pozostają nieznane;
-- Phase-6 mechanizm/smoke nie zastępuje brakującego live model benchmarku Saddle Phase 4.
+- brak ScriptOps v5/RC1 maturity claim;
+- brak niezależnego zewnętrznego user testu;
+- brak produkcyjnego narrative-value claim;
+- brak AI model quality claim;
+- brak live Saddle ModelGateway → Executor proof;
+- brak production identity/request-origin provider;
+- brak `FUNCTIONAL_SADDLE_ACCEPTED`.
 
-## 10. Aktualna bramka
+## 10. Zakaz rozbudowy pozostaje aktywny
 
-`PHASE 6 BOUNDED PROOF IN PROGRESS`
-
-PR Phase 6 ma przejść jednocześnie:
-
-1. deterministyczny end-to-end smoke;
-2. istniejący self-containment verifier;
-3. review zakresu potwierdzający brak rewrite/new capability.
-
-Dopiero po zielonym dowodzie można uznać B1–B5 za technicznie zamknięte.
+Nie dodawać browser helpera, model/API automation, autonomous approval, agent framework, multi-agent, GUI/dashboard, vector DB, semantic graph, multi-user ani innych funkcji post-MVP bez nowej jawnej decyzji.
 
 ## 11. Jeden następny krok
 
-Doprowadzić PR Phase 6 do zielonego smoke + repository continuity verification, zapisać evidence i scalić bounded hardening. Następnie wrócić do Saddle z dokładnym wynikiem: co przeszło, czego nadal nie dowiedziono i jaki gate jest następny.
+Po zielonym finalnym headzie i merge PR #7 przekazać evidence do Saddle i wrócić do nadal otwartego live AI-worker benchmark/effect proof (Phase 4 evidence), zgodnie z decyzją użytkownika: najpierw granice, potem workflow proof, następnie większa inteligencja.
 
 ## 12. Źródła szczegółowe
 
-- `sources/Decision_Summary_Current_State.md` — podsumowanie decyzji produktu;
-- `sources/ScriptOps_Main_Theme_Summary.md` — definicja i główne prawo produktu;
-- `sources/RC1_SCOPE_LOCK.md` — blokada zakresu RC1;
-- `CODEX_START.md` — historyczny kontrakt startowy Codex;
-- `legacy/scriptops-v2-single.py` — wybrana historyczna baza;
-- `analysis/RC1_V2_GAP_2026-08-10.md` — access check i B1–B5;
+- `sources/Decision_Summary_Current_State.md`;
+- `sources/ScriptOps_Main_Theme_Summary.md`;
+- `sources/RC1_SCOPE_LOCK.md`;
+- `legacy/scriptops-v2-single.py`;
+- `analysis/RC1_V2_GAP_2026-08-10.md`;
 - `DECISION_LOG.md` — DEC-SO-010;
-- `phase6/scriptops-v2-hardening.py` — ograniczony hardening shim;
-- `tests/test_phase6_scriptops_smoke.py` — proof path;
-- `scripts/restore_v2.py` + `sources/prototype/` — dowód odtwarzalności historycznego v2;
-- `RECONSTRUCTION_REPORT.md` i `SOURCE_AUDIT_SUMMARY.md` — historia rekonstrukcji.
+- `phase6/scriptops-v2-hardening.py`;
+- `tests/test_phase6_scriptops_smoke.py`;
+- `evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md`;
+- `scripts/restore_v2.py` + `sources/prototype/`;
+- `RECONSTRUCTION_REPORT.md` i `SOURCE_AUDIT_SUMMARY.md`.
