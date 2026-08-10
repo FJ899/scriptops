@@ -2,9 +2,9 @@
 project: "Narzędzie pisarskie / ScriptOps"
 canonical_name: "ScriptOps"
 cos_status: "QUEUED #1"
-status: "NOT ACTIVATED / SOURCE OF TRUTH ACTIVE / ACCESS CHECK REQUIRED"
+status: "NOT ACTIVATED / SOURCE OF TRUTH ACTIVE / BASE SELECTION DECISION REQUIRED"
 reconstructed_at: "2026-07-27"
-updated_at: "2026-07-29"
+updated_at: "2026-08-10"
 state_owner: "PROJECT_STATE.md"
 ---
 
@@ -108,11 +108,21 @@ Final Master Package wskazuje jako aktualny kandydat decyzji:
 
 - `ScriptOps_FINAL_MASTER_PACKAGE` zawiera definicję produktu, podsumowanie decyzji, blokadę zakresu RC1, instrukcje dla Codex, kontrakty i testy na poziomie specyfikacji oraz materiały post-MVP.
 
+### ACCESS CHECK — GITHUB SIDE COMPLETE
+
+- w dostępnym zestawie repozytoriów GitHub wyszukiwanie `scriptops` wskazuje tylko `litrgratis-pixel/scriptops`;
+- wyszukiwanie repozytorium `RC1` nie zwraca późniejszej implementacji;
+- brak późniejszego RC1/Codex builda w dostępnym pakiecie GitHub;
+- lokalne/off-GitHub artefakty pozostają nieznane.
+
+Szczegóły i porównanie v2 z RC1: `analysis/RC1_V2_GAP_2026-08-10.md`.
+
 ## 7. Elementy niepotwierdzone
 
 - Brak dowodu implementacji ScriptOps v5 RC1.
 - Brak pełnego smoke testu RC1.
-- Brak potwierdzonego późniejszego repozytorium zgodnego z Final Master Package.
+- Brak potwierdzonego późniejszego repozytorium zgodnego z Final Master Package w dostępnym GitHubie.
+- Nie można wykluczyć lokalnego/off-GitHub wyniku Codex niedostępnego w podłączonym źródle.
 - Brak testu pełnej pętli na rzeczywistej zmianie narracyjnej.
 - Brak testu z niezależnym użytkownikiem.
 - Brak VALIDATED RESULT.
@@ -129,9 +139,15 @@ ale zawierają instrukcje rozpoczęcia implementacji, nie gotowy build.
 
 ### Prototyp v2 a zakres v5 RC1
 
-Istniejący prototyp realizuje część starszego procesu, lecz ma inny model danych i mniejszy zakres.
+Porównanie z 2026-08-10 potwierdza, że v2 ma większość mechaniki potrzebnej do jednego happy-pathu: CLI, Git, task/context, walidację, staging, approve i decision log. Jednocześnie istnieją konkretne blokery wykonania:
 
-**Werdykt:** nie zakładać, że v2 jest bazą RC1 bez porównania `legacy/scriptops-v2-single.py` z `sources/RC1_SCOPE_LOCK.md`.
+1. tworzony task pozostawia dirty tree, a `check-pre` wymaga clean tree;
+2. task/context/WebAI artifacts mogą pozostawić dirty tree przed `approve`;
+3. `approve` zmienia `candidate` na `accepted` bez przeliczenia hasha sceny;
+4. approve nie wymaga `why`;
+5. brak impact reportu i pełnego smoke testu.
+
+**Rekomendacja techniczna:** użyć `legacy/scriptops-v2-single.py` jako bazy najmniejszego jednego przypadku, zamiast przepisywać istniejące mechanizmy. To nadal rekomendacja, nie zatwierdzona decyzja o bazie.
 
 ### Redukcja pracy ręcznej
 
@@ -141,37 +157,25 @@ RC1 nadal zakłada ręczne przeniesienie odpowiedzi WebAI.
 
 ## 9. Miejsce zatrzymania
 
-Zakres ScriptOps v5 RC1 został zamknięty.
+`ACCESS CHECK` po stronie dostępnego GitHuba został zakończony wynikiem:
 
-Przygotowano materiały nakazujące Codexowi najpierw przedstawić:
+`NOT FOUND ON ACCESSIBLE GITHUB — V2 VS RC1 COMPARISON COMPLETE`.
 
-- drzewo repozytorium;
-- moduły;
-- tabele SQLite;
-- mapę CLI;
-- plan testów;
-- sprzeczności;
-- listę wykluczonych funkcji.
+Porównanie v2 z RC1 zostało zapisane w `analysis/RC1_V2_GAP_2026-08-10.md`.
 
-Implementacja miała rozpocząć się po zatwierdzeniu planu. W dostępnych
-materiałach nie ma dowodu, że nastąpiło zatwierdzenie planu albo implementacja.
+Zgodnie z `DEC-SO-006` i `DEC-SO-007` następny krok jest decyzją o bazie implementacji. Nie należy rozpoczynać zmian runtime przed jej zatwierdzeniem.
 
 ## 10. Rzeczywista blokada
 
-`ACCESS CHECK REQUIRED`
+`BASE SELECTION DECISION REQUIRED`
 
-Należy ustalić, czy istnieje późniejsze repozytorium, kod albo wynik
-pracy Codex nieobecny w przekazanym pakiecie.
+Rekomendacja: wybrać `legacy/scriptops-v2-single.py` jako bazę najmniejszej naprawy jednego end-to-end happy-pathu i wdrożyć tylko blokery B1–B5 opisane w analizie.
 
 ## 11. Jeden następny krok
 
-Sprawdzić notatki, lokalne foldery i dostępne repozytoria pod kątem
-późniejszej implementacji ScriptOps RC1 lub odpowiedzi Codex powstałej
-po Final Master Package.
+Człowiek zatwierdza albo odrzuca użycie `legacy/scriptops-v2-single.py` jako bazy dla jednego minimalnego end-to-end przypadku ScriptOps.
 
-Jeżeli nic takiego nie istnieje, następnym krokiem będzie porównanie
-`legacy/scriptops-v2-single.py` z `sources/RC1_SCOPE_LOCK.md`
-przed decyzją o bazie implementacji.
+Po zatwierdzeniu implementacja powinna ograniczyć się do najmniejszego delta potrzebnego dla: task → context → candidate → validation → impact → human approve z `why` → poprawny hash → Git commit → smoke test.
 
 ## 12. Źródła szczegółowe
 
@@ -185,33 +189,5 @@ przed decyzją o bazie implementacji.
 - `sources/prototype/RESTORE.md` — instrukcja awaryjnego odtworzenia prototypu;
 - `scripts/restore_v2.py` — kontrola i odtworzenie kanonicznego pliku;
 - `sources/prototype/scriptops-v2-single.py.part01` … `part07` — transportowy zapis pełnej treści prototypu v2;
-- `RECONSTRUCTION_REPORT.md` i `SOURCE_AUDIT_SUMMARY.md` — historia, dowody i granice rekonstrukcji.
-
-### Historyczne ścieżki pochodzenia
-
-Poniższe nazwy opisują lokalizację w pierwotnym pakiecie źródłowym. Nie są ścieżkami aktywnego repo:
-
-- `ScriptOps_FINAL_MASTER_PACKAGE/01_PRODUCT_TRUTH/Decision_Summary_Current_State.md`;
-- `ScriptOps_FINAL_MASTER_PACKAGE/01_PRODUCT_TRUTH/ScriptOps_Main_Theme_Summary.md`;
-- `ScriptOps_FINAL_MASTER_PACKAGE/03_CODEX_RC1_BUILD/RC1_SCOPE_LOCK.md`;
-- `ScriptOps_FINAL_MASTER_PACKAGE/03_CODEX_RC1_BUILD/CODEX_MASTER_RC1_BUILD_INSTRUCTION.md`.
-
-Treści potrzebne do zwykłego wznowienia zostały znormalizowane do plików wymienionych w poprzedniej sekcji. Oryginalny pełny pakiet pozostaje materiałem dowodowym poza aktywnym repo.
-
-### Historyczne źródła S2 Studio / Mądrego Warsztatu
-
-- `RR_S2_decyzja_start_architektury_v1.txt`;
-- `DECYZJA_WDROZENIOWA_PO_AUDYTACH_MADRY_WARSZTAT_v1.md`;
-- `00_PANEL_STANU_CURRENT.md`;
-- `05_FILE_REGISTRY.md`;
-- `03_S2_DECISION_LOG.md`.
-
-Ich ustalenia wymagane do wznowienia zostały zachowane w `RECONSTRUCTION_REPORT.md` i `SOURCE_AUDIT_SUMMARY.md`. Oryginały nie są wymagane do zwykłego rozpoczęcia kolejnej sesji.
-
-### Historyczne decyzje i reguły użytkownika
-
-- `B4.txt`;
-- `B5.txt`;
-- `B5 - Aneks.txt`.
-
-Ich aktualne konsekwencje są zapisane w sekcjach 4–5 tego dokumentu oraz w `DECISION_LOG.md`.
+- `RECONSTRUCTION_REPORT.md` i `SOURCE_AUDIT_SUMMARY.md` — historia, dowody i granice rekonstrukcji;
+- `analysis/RC1_V2_GAP_2026-08-10.md` — aktualny access check i porównanie wykonawcze.
