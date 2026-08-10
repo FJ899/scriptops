@@ -4,9 +4,9 @@ Repozytorium lokalnego stanu projektu **Narzędzie pisarskie / ScriptOps**.
 
 ## Status
 
-`PHASE 6 BOUNDED PROOF / V2 BASE SELECTED / NO MATURITY CLAIM`
+`PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / NO MATURITY CLAIM`
 
-Jawna decyzja użytkownika: `legacy/scriptops-v2-single.py` jest bazą pierwszego kontrolowanego workflow. `REWRITE: NO`. `NEW CAPABILITY: NO`.
+Jawna decyzja użytkownika: `legacy/scriptops-v2-single.py` jest bazą Phase 6. `REWRITE: NO`. `NEW CAPABILITY: NO`.
 
 ## Uruchomienie nowej sesji
 
@@ -16,19 +16,19 @@ Nowe AI ma przeczytać w tej kolejności:
 2. `PROJECT_STATE.md`
 3. `HANDOFF.md`
 4. `DECISION_LOG.md`
-5. `analysis/RC1_V2_GAP_2026-08-10.md`
-6. `IDEA_ARCHIVE.md`
-7. `SOURCE_MANIFEST.md`
-8. `RECONSTRUCTION_REPORT.md`
+5. `evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md`
+6. `analysis/RC1_V2_GAP_2026-08-10.md`
+7. `IDEA_ARCHIVE.md`
+8. `SOURCE_MANIFEST.md`
+9. `RECONSTRUCTION_REPORT.md`
 
 ## Zasady nadrzędne
 
 - odpowiedź AI jest kandydatem, nie prawdą projektu;
 - zmiana kanonu wymaga walidacji, decyzji człowieka, uzasadnienia i zapisu w Git;
-- candidate artifact nie jest jeszcze kanonicznym efektem;
+- candidate artifact nie jest kanonicznym efektem;
 - kanoniczny zapis Phase 6 następuje dopiero po `approve --why`;
-- obecny etap nie obejmuje budowy pełnej wizji ScriptOps v5;
-- nie wolno uznać specyfikacji albo smoke testu za maturity claim;
+- smoke proof nie jest maturity claim;
 - nie wolno rozszerzać zakresu o nowe capability;
 - pełne rozmowy i dane prywatne pozostają poza aktywnym drzewem.
 
@@ -40,50 +40,43 @@ Wybrana historyczna baza:
 legacy/scriptops-v2-single.py
 ```
 
-Historyczny plik pozostaje niezmieniony jako źródło i dowód v2. Ograniczony hardening:
+Historyczny plik pozostaje niezmieniony. Ograniczony hardening:
 
 ```text
 phase6/scriptops-v2-hardening.py
 ```
 
-zamyka wyłącznie B1–B5:
+zamknął B1–B5:
 
 1. task clean-tree checkpoint;
 2. generated evidence/candidate-input lifecycle;
-3. accepted hash;
+3. fresh accepted hash;
 4. mandatory human `why`;
-5. impact report + smoke proof.
+5. impact report + deterministic smoke proof.
 
-Test:
+Evidence:
+
+```text
+evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md
+```
+
+## Testy
 
 ```bash
 python -m unittest discover -s tests -p 'test_phase6_*.py' -v
-```
-
-## Kontrola repozytorium
-
-```bash
 python scripts/verify_repository.py
 ```
 
-Walidator sprawdza trwałe źródła, spójność aktualnego statusu/handoffu, scope lock, decyzje, odtwarzalność pełnego historycznego v2 oraz obecność bounded Phase-6 proof path.
+Na zweryfikowanym head PR #7 oba GitHub Actions checks zakończyły się sukcesem; finalny head po zapisaniu evidence również musi pozostać zielony przed merge.
 
-Awaryjne odtworzenie historycznego v2:
-
-```bash
-python scripts/restore_v2.py --force
-```
-
-## Zakaz rozbudowy w Phase 6
+## Zakaz rozbudowy
 
 Nie dodawać browser helpera, direct model/API automation, autonomous approval, agent framework, multi-agent, GUI/dashboard, vector DB, semantic graph ani multi-user.
 
-## Audyt ciągłości
+## Co dalej
 
-Pierwszy niezależny cold start bez pamięci wcześniejszej rozmowy zapisano w `continuity/COLD_START_AUDIT-001.md`.
+Po merge Phase 6 wynik wraca do Saddle. Następnym brakującym dowodem jest live AI-worker benchmark/effect path; ScriptOps nie powinien być dalej rozbudowywany przed tym gate'em.
 
-## Aktualny następny krok
-
-Doprowadzić PR Phase 6 do zielonego end-to-end smoke i repository continuity verification. Dopiero wtedy zapisać końcowe evidence B1–B5 i scalić bounded hardening.
+`MATURITY CLAIM`: **NONE**.
 
 `FUNCTIONAL_SADDLE_ACCEPTED`: **NOT YET**.
