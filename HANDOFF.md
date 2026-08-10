@@ -1,11 +1,11 @@
 ---
 project: "ScriptOps"
 portfolio_status: "QUEUED #1"
-activation: "NOT ACTIVATED"
+activation: "BOUNDED PHASE 6 PROOF COMPLETE"
 state_owner: "PROJECT_STATE.md"
-blocker: "BASE SELECTION DECISION REQUIRED"
-next_step: "human_decide_v2_as_single_slice_base"
-resume_contract: "REVIEW DECISION / NO RUNTIME IMPLEMENTATION BEFORE BASE SELECTION"
+blocker: "FINAL PR HEAD MUST REMAIN GREEN BEFORE MERGE"
+next_step: "merge_phase6_then_return_to_saddle_live_model_evidence"
+resume_contract: "REUSE V2 / NO REWRITE / NO NEW CAPABILITY / NO MATURITY CLAIM"
 ---
 
 # HANDOFF — ScriptOps
@@ -13,53 +13,73 @@ resume_contract: "REVIEW DECISION / NO RUNTIME IMPLEMENTATION BEFORE BASE SELECT
 ## Stan wejściowy
 
 - Projekt: `Narzędzie pisarskie / ScriptOps`
-- Pozycja w Creative OS: `QUEUED #1`
-- Aktywacja: `NOT ACTIVATED`
+- Ogólna aktywacja produktu: `NO`
+- Phase 6 mechanism proof: `PASS ON VERIFIED PR HEAD`
+- Baza: `legacy/scriptops-v2-single.py`
+- Rewrite: `NO`
+- New capability: `NO`
+- Maturity claim: `NONE`
+- `FUNCTIONAL_SADDLE_ACCEPTED`: `NOT YET`
 - Lokalne źródło prawdy: `PROJECT_STATE.md`
-- Blokada: `BASE SELECTION DECISION REQUIRED`
 
-Nagłówek YAML jest maszynowym skrótem tego samego handoffu, a nie osobnym źródłem prawdy. W przypadku sprzeczności obowiązuje treść `PROJECT_STATE.md` oraz najnowsza jawna decyzja użytkownika.
+Nagłówek YAML jest maszynowym skrótem tego samego handoffu. W przypadku sprzeczności obowiązuje `PROJECT_STATE.md` i najnowsza jawna decyzja człowieka.
 
-## Co zostało wykonane
+## Decyzja
 
-1. Zrekonstruowano ciąg: workflow B3 → B2 → RR → Mądry Warsztat / S2 Studio → ScriptOps v2 → ScriptOps WebAI v5 / RC1.
-2. Zabezpieczono stan, źródła, decyzje, archiwum pomysłów i kanoniczny prototyp v2.
-3. Zakończono GitHub-side `ACCESS CHECK`: w dostępnym zestawie nie ma późniejszego repo/builda ScriptOps RC1; lokalne/off-GitHub artefakty pozostają nieznane.
-4. Porównano `legacy/scriptops-v2-single.py` z `sources/RC1_SCOPE_LOCK.md` i wymaganiem jednego pełnego happy-pathu.
-5. Zapisano wynik w `analysis/RC1_V2_GAP_2026-08-10.md`.
-6. Zidentyfikowano pięć konkretnych blockerów istniejącej ścieżki: clean-tree lifecycle taska/evidence, clean-tree przed approve, stale accepted hash, brak obowiązkowego `why`, brak impact report/smoke proof.
+`DEC-SO-010`: człowiek wybrał `legacy/scriptops-v2-single.py` jako bazę Saddle Phase 6 — reuse + hardening + proof.
 
-## Czego nie wykonano
+## Co zostało udowodnione
 
-- nie wybrano kanonicznej bazy implementacji;
-- nie zmieniono runtime v2;
-- nie wykonano pełnego smoke testu;
-- nie wykonano rzeczywistej zmiany narracyjnej;
-- nie zatwierdzono żadnej zmiany kanonu;
-- nie ogłoszono VALIDATED RESULT.
+B1–B5 są zamknięte na kontrolowanym workflow:
 
-## Rekomendacja
+1. task jest trwałym clean-tree checkpointem;
+2. preflight/context/candidate input/impact nie zostawiają ukrytego dirty lifecycle;
+3. unrelated dirty state blokuje candidate import;
+4. accepted scene hash jest świeży po zmianie statusu;
+5. `approve --why` jest obowiązkowe;
+6. impact report istnieje przed human decision;
+7. canonical scene jest zapisywana dopiero po explicit approval;
+8. decision log + Git zachowują evidence.
 
-Użyć `legacy/scriptops-v2-single.py` jako bazy pierwszego jednego end-to-end happy-pathu. Powód: większość wymaganej mechaniki już istnieje, a wykryte braki są lokalnymi, konkretnymi blockerami. Przepisywanie od zera zwiększyłoby zakres bez dowodu potrzeby.
+Historyczny `legacy/scriptops-v2-single.py` nie został przepisany. `phase6/scriptops-v2-hardening.py` jest małym audytowalnym shimem nad v2.
 
-Ta rekomendacja nie jest decyzją projektu.
+## Evidence
 
-## Jeden następny krok
+`evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md`
 
-Człowiek zatwierdza albo odrzuca użycie `legacy/scriptops-v2-single.py` jako bazy dla minimalnego jednego przypadku end-to-end.
+Na head `f5560719530ffe07c5f61524007839431eee43e1`:
 
-Jeżeli zatwierdzi, implementować wyłącznie delta potrzebne do: task → context → candidate import → validation → impact report → human approve z `why` → poprawny accepted hash → Git commit → smoke test.
+- Phase 6 ScriptOps smoke run `31421551632` → success;
+- Verify repository state run `31421551982` → success.
+
+Po późniejszych commitach evidence/status finalny head PR #7 musi również przejść oba checki przed merge.
+
+## Czego nie udowodniono
+
+- brak maturity claim ScriptOps v5/RC1;
+- brak independent external user test;
+- brak produkcyjnego narrative-value claim;
+- brak live real-model Saddle → Executor proof;
+- brak production trust provider;
+- brak `FUNCTIONAL_SADDLE_ACCEPTED`.
 
 ## Zakaz dryfu
 
-Do czasu decyzji o bazie nie rozwijać browser helpera, API, autonomicznego agenta, AI Guard, grafu semantycznego, pełnego IdeaOps, dashboardu, eksportu, multi-user ani innych elementów post-MVP.
+Nie dodawać browser helpera, model/API automation, autonomous approval, agent framework, multi-agent, GUI/dashboard, vector DB, semantic graph, multi-user ani innych capability.
+
+## Jeden następny krok
+
+Jeżeli finalny head PR #7 pozostaje zielony: merge bounded Phase 6 hardening, zaktualizować Saddle evidence/state i wrócić do otwartego live AI-worker benchmark/effect proof.
 
 ## Pliki do otwarcia przez nową sesję
 
 1. `README.md`
 2. `PROJECT_STATE.md`
 3. `HANDOFF.md`
-4. `DECISION_LOG.md`
-5. `sources/RC1_SCOPE_LOCK.md`
-6. `analysis/RC1_V2_GAP_2026-08-10.md`
-7. `legacy/scriptops-v2-single.py`
+4. `DECISION_LOG.md` — DEC-SO-010
+5. `analysis/RC1_V2_GAP_2026-08-10.md`
+6. `legacy/scriptops-v2-single.py`
+7. `phase6/scriptops-v2-hardening.py`
+8. `tests/test_phase6_scriptops_smoke.py`
+9. `evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md`
+10. `scripts/verify_repository.py`

@@ -4,7 +4,9 @@ Repozytorium lokalnego stanu projektu **Narzędzie pisarskie / ScriptOps**.
 
 ## Status
 
-`QUEUED #1 / NOT ACTIVATED / SOURCE OF TRUTH ACTIVE / ACCESS CHECK REQUIRED`
+`PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / NO MATURITY CLAIM`
+
+Jawna decyzja użytkownika: `legacy/scriptops-v2-single.py` jest bazą Phase 6. `REWRITE: NO`. `NEW CAPABILITY: NO`.
 
 ## Uruchomienie nowej sesji
 
@@ -14,59 +16,67 @@ Nowe AI ma przeczytać w tej kolejności:
 2. `PROJECT_STATE.md`
 3. `HANDOFF.md`
 4. `DECISION_LOG.md`
-5. `IDEA_ARCHIVE.md`
-6. `SOURCE_MANIFEST.md`
-7. `RECONSTRUCTION_REPORT.md`
-
-Do rozstrzygania sporów lub sprawdzania pochodzenia decyzji użyć `SOURCE_AUDIT_SUMMARY.md`, `SOURCE_MANIFEST.md` i materiałów w `sources/`.
+5. `evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md`
+6. `analysis/RC1_V2_GAP_2026-08-10.md`
+7. `IDEA_ARCHIVE.md`
+8. `SOURCE_MANIFEST.md`
+9. `RECONSTRUCTION_REPORT.md`
 
 ## Zasady nadrzędne
 
 - odpowiedź AI jest kandydatem, nie prawdą projektu;
 - zmiana kanonu wymaga walidacji, decyzji człowieka, uzasadnienia i zapisu w Git;
-- obecny etap nie obejmuje budowy pełnej wizji ScriptOps v5;
-- nie wolno uznać specyfikacji za działający produkt bez dowodu wykonania;
-- nie wolno automatycznie aktywować projektu ani rozszerzać zakresu RC1;
-- pełne rozmowy i dane prywatne pozostają poza aktywnym drzewem; repo zawiera minimalny, odtwarzalny pakiet dowodowy.
+- candidate artifact nie jest kanonicznym efektem;
+- kanoniczny zapis Phase 6 następuje dopiero po `approve --why`;
+- smoke proof nie jest maturity claim;
+- nie wolno rozszerzać zakresu o nowe capability;
+- pełne rozmowy i dane prywatne pozostają poza aktywnym drzewem.
 
-## Kontrola repozytorium
+## Phase 6 — reuse + hardening + proof
 
-```bash
-python scripts/verify_repository.py
-```
-
-Walidator sprawdza wymagane pliki, spójność statusów, maszynowy nagłówek handoffu, źródła RC1, archiwum pomysłów oraz pełny prototyp v2. Kontroluje również, czy `legacy/scriptops-v2-single.py` jest identyczny z wersją odtworzoną z historycznych części, ma właściwy SHA-256, rozmiar i poprawną składnię.
-
-Kanoniczny historyczny prototyp:
+Wybrana historyczna baza:
 
 ```text
 legacy/scriptops-v2-single.py
 ```
 
-Awaryjne odtworzenie z części transportowych:
+Historyczny plik pozostaje niezmieniony. Ograniczony hardening:
 
-```bash
-python scripts/restore_v2.py --force
+```text
+phase6/scriptops-v2-hardening.py
 ```
 
-## Zasada zmian
+zamknął B1–B5:
 
-Pull request dodający nową funkcję lub regułę powinien wskazać:
+1. task clean-tree checkpoint;
+2. generated evidence/candidate-input lifecycle;
+3. fresh accepted hash;
+4. mandatory human `why`;
+5. impact report + deterministic smoke proof.
 
-- konkretny problem albo porażkę;
-- dlaczego obecny mechanizm nie wystarcza;
-- obserwowalny dowód zaliczenia;
-- nowy koszt utrzymania;
-- elementy pozostające poza zakresem.
+Evidence:
 
-Nie wymaga tego zwykła korekta techniczna, która nie zmienia zachowania ani stanu projektu.
+```text
+evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md
+```
 
-## Audyt ciągłości
+## Testy
 
-Pierwszy niezależny cold start bez pamięci wcześniejszej rozmowy zapisano w `continuity/COLD_START_AUDIT-001.md`.
+```bash
+python -m unittest discover -s tests -p 'test_phase6_*.py' -v
+python scripts/verify_repository.py
+```
 
-## Aktualny następny krok
+Na zweryfikowanym head PR #7 oba GitHub Actions checks zakończyły się sukcesem; finalny head po zapisaniu evidence również musi pozostać zielony przed merge.
 
-Sprawdzić, czy istnieje późniejsze repozytorium, kod albo wynik pracy Codex zgodny z `sources/RC1_SCOPE_LOCK.md`.
+## Zakaz rozbudowy
 
-Jeżeli nie istnieje, porównać `legacy/scriptops-v2-single.py` z zakresem RC1 przed decyzją, czy prototyp jest bazą implementacji.
+Nie dodawać browser helpera, direct model/API automation, autonomous approval, agent framework, multi-agent, GUI/dashboard, vector DB, semantic graph ani multi-user.
+
+## Co dalej
+
+Po merge Phase 6 wynik wraca do Saddle. Następnym brakującym dowodem jest live AI-worker benchmark/effect path; ScriptOps nie powinien być dalej rozbudowywany przed tym gate'em.
+
+`MATURITY CLAIM`: **NONE**.
+
+`FUNCTIONAL_SADDLE_ACCEPTED`: **NOT YET**.

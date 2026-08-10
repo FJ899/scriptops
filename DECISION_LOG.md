@@ -43,9 +43,11 @@ Status: `ACTIVE`
 
 ## DEC-SO-006 — prototyp v2 nie jest automatycznie bazą RC1
 
-Status: `ACTIVE`
+Status: `SUPERSEDED BY DEC-SO-010`
 
 Decyzja o bazie implementacji wymaga porównania `legacy/scriptops-v2-single.py` z `sources/RC1_SCOPE_LOCK.md`.
+
+Porównanie zostało wykonane w `analysis/RC1_V2_GAP_2026-08-10.md`; decyzję o bazie podjęto w DEC-SO-010.
 
 ## DEC-SO-007 — kolejność pracy
 
@@ -59,9 +61,9 @@ Status: `ACTIVE`
 
 ## DEC-SO-008 — projekt nie jest jeszcze aktywowany
 
-Status: `ACTIVE`
+Status: `ACTIVE WITH PHASE-6 BOUNDED IMPLEMENTATION EXCEPTION`
 
-ScriptOps pozostaje `QUEUED #1 / NOT ACTIVATED`. Rekonstrukcja i zabezpieczenie repo nie oznaczają rozpoczęcia implementacji.
+ScriptOps pozostaje bez ogólnej aktywacji produktu. Jawna decyzja DEC-SO-010 zezwala wyłącznie na ograniczony Phase-6 proof slice B1–B5; nie aktywuje szerszego roadmapu ani funkcji post-MVP.
 
 ## DEC-SO-009 — pojedyncza kanoniczna kopia prototypu v2
 
@@ -72,3 +74,40 @@ Pełny historyczny prototyp jest dostępny jako `legacy/scriptops-v2-single.py`.
 Evidence: niezależny cold start wykazał tarcie wynikające z konieczności ręcznego składania pliku.
 
 Implemented by: PR wprowadzający usprawnienia Lean po audytach ciągłości.
+
+## DEC-SO-010 — v2 jest bazą Phase 6; reuse + hardening + proof
+
+Status: `ACTIVE`
+Owner: `USER`
+Date: `2026-08-10`
+
+Decision:
+
+```text
+YES
+BASE: legacy/scriptops-v2-single.py
+REWRITE: NO
+NEW CAPABILITY: NO
+PHASE 6: reuse + hardening + proof
+MATURITY CLAIM: NONE
+FUNCTIONAL_SADDLE_ACCEPTED: NOT YET
+```
+
+Zakres wykonawczy jest zamrożony do znanych blockerów B1–B5:
+
+1. spójny lifecycle / clean-tree checkpoints;
+2. spójny lifecycle artefaktów przed approval;
+3. przeliczenie accepted scene hash po zmianie statusu;
+4. obowiązkowe ludzkie `why` przed kanonicznym zapisem;
+5. minimalny impact report i deterministyczny smoke proof.
+
+Zasady:
+
+- historyczny `legacy/scriptops-v2-single.py` pozostaje kanonicznym źródłem bazowym i dowodem v2;
+- Phase-6 hardening może być małym audytowalnym shimem nad v2 zamiast przepisywania historycznego artefaktu;
+- kandydat przed approval jest proposal artifact, nie kanonicznym efektem;
+- kanoniczny zapis sceny następuje dopiero po jawnej decyzji człowieka z `why`;
+- ScriptOps nie dostaje własnej authority, interpretacji celu ani autonomicznego planowania;
+- brak browser/API automation, agent framework, multi-agent, GUI, vector DB, semantic graph, multi-user i innych nowych capability.
+
+Evidence: jawna decyzja użytkownika w Saddle Phase 6 + `analysis/RC1_V2_GAP_2026-08-10.md`.
