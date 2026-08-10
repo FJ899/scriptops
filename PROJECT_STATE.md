@@ -2,7 +2,7 @@
 project: "Narzędzie pisarskie / ScriptOps"
 canonical_name: "ScriptOps"
 cos_status: "QUEUED #1"
-status: "NOT ACTIVATED / SOURCE OF TRUTH ACTIVE / BASE SELECTION DECISION REQUIRED"
+status: "PHASE 6 BOUNDED IMPLEMENTATION / V2 BASE SELECTED / PROOF IN PROGRESS / NO MATURITY CLAIM"
 reconstructed_at: "2026-07-27"
 updated_at: "2026-08-10"
 state_owner: "PROJECT_STATE.md"
@@ -12,182 +12,129 @@ state_owner: "PROJECT_STATE.md"
 
 ## 1. Aktualny rezultat
 
-Przygotować i empirycznie sprawdzić najmniejszą wersję ScriptOps RC1,
-która przeprowadza jedną rzeczywistą zmianę narracyjną przez pełną pętlę:
+Empirycznie sprawdzić najmniejszą pętlę ScriptOps opartą na istniejącym v2:
 
 ```text
 task
 → context bundle
-→ WebAI candidate import
+→ candidate import
 → validation
 → impact report
-→ human decision
+→ human decision with why
+→ accepted identity
 → decision log
 → Git commit
 ```
 
-Celem obecnego etapu nie jest budowa pełnej wizji ScriptOps v5.
+Celem Phase 6 nie jest budowa pełnej wizji ScriptOps v5 ani ogólna aktywacja produktu.
 
 ## 2. Definicja projektu
 
-ScriptOps jest lokalnym systemem kontroli prawdy, decyzji i zmian
-dla projektów narracyjnych oraz innych projektów intensywnie
-wykorzystujących idee i AI.
+ScriptOps jest lokalnym systemem kontroli prawdy, decyzji i zmian dla projektów narracyjnych oraz innych projektów intensywnie wykorzystujących idee i AI.
 
-AI tworzy kandydatów. ScriptOps przygotowuje kontekst, kontroluje
-strukturę i raportuje wpływ. Człowiek zatwierdza albo odrzuca zmianę.
-
-Dopiero zmiana zwalidowana, zatwierdzona, zapisana z uzasadnieniem
-i utrwalona w Git staje się prawdą projektu.
+AI tworzy kandydatów. ScriptOps przygotowuje kontekst, kontroluje strukturę i raportuje wpływ. Człowiek zatwierdza albo odrzuca zmianę. Dopiero zmiana zwalidowana, zatwierdzona z uzasadnieniem i utrwalona w Git staje się prawdą projektu.
 
 ## 3. Historia projektu
 
 1. Workflow B3 → B2 → RR prowadził rzeczywistą produkcję „Przygód Liścionka”.
 2. Mądry Warsztat / S2 Studio uporządkował role, stan, recenzję i przekazywanie artefaktów.
 3. ScriptOps v2 przeniósł część mechanizmów do lokalnego CLI.
-4. ScriptOps WebAI v5 rozszerzył projekt do systemu kontroli prawdy.
+4. ScriptOps WebAI v5 rozszerzył specyfikację do systemu kontroli prawdy.
 5. Final Master Package zamknął zakres MVP RC1 i przygotował instrukcje implementacyjne dla Codex.
+6. GitHub-side access check nie znalazł późniejszego RC1 builda; analiza v2 wskazała pięć konkretnych blockerów jednego happy-pathu.
+7. 2026-08-10 człowiek jawnie wybrał v2 jako bazę Saddle Phase 6: reuse + hardening + proof, bez rewrite i bez nowych capability.
 
-B3, B2, RR, S2 Studio, ScriptOps v2, v5 i RC1 są etapami, rolami
-lub wersjami tego samego projektu.
+## 4. Aktualne decyzje użytkownika
 
-## 4. Najnowsze decyzje użytkownika
+Obowiązują `DEC-SO-001`…`DEC-SO-010`, w szczególności:
 
-1. Narzędzie pisarskie / ScriptOps jest projektem numer 1 w kolejce.
-2. Projekt ma zostać odtworzony przed dalszą implementacją.
-3. Użytkownik pozostaje właścicielem koncepcji, kanonu i decyzji.
-4. AI nie może automatycznie zmieniać kanonu.
-5. Szczegółowy stan projektu należy do tego repozytorium, nie do głównego pliku Creative OS.
-6. Ten dokument jest zatwierdzonym lokalnym źródłem prawdy.
+- człowiek pozostaje właścicielem kanonu i decyzji;
+- AI tworzy kandydatów, nie zatwierdza kanonu;
+- `legacy/scriptops-v2-single.py` jest wybraną bazą Phase 6;
+- `REWRITE: NO`;
+- `NEW CAPABILITY: NO`;
+- Phase 6 = `reuse + hardening + proof`;
+- `MATURITY CLAIM: NONE`;
+- `FUNCTIONAL_SADDLE_ACCEPTED: NOT YET`.
 
-## 5. Zrekonstruowane decyzje produktowe
+## 5. Zamrożony zakres Phase 6
 
-Final Master Package wskazuje jako aktualny kandydat decyzji:
+Naprawiamy tylko B1–B5 z `analysis/RC1_V2_GAP_2026-08-10.md`:
 
-1. ScriptOps jest lokalnym systemem kontroli prawdy, a nie głównie AI writerem, analizatorem scenariusza ani prompt managerem.
-2. RC1 ma udowodnić najmniejszą lokalną pętlę kontroli.
-3. RC1 obejmuje:
-   - lokalny projekt i CLI;
-   - zadania;
-   - pakiet kontekstu;
-   - ręczny import odpowiedzi WebAI;
-   - walidację strukturalną;
-   - prosty raport wpływu;
-   - approve / reject / revision;
-   - decision log z uzasadnieniem;
-   - Git commit;
-   - dirty-state detection;
-   - smoke test.
-4. RC1 nie obejmuje:
-   - browser helpera;
-   - integracji API;
-   - autonomicznego agenta;
-   - AI Guard;
-   - automatycznego grafu semantycznego;
-   - pełnego IdeaOps;
-   - dashboardu;
-   - eksportu;
-   - multi-user.
-5. Wartościowe pomysły post-MVP mają być zachowywane, ale nie implementowane przed dowodem potrzeby.
+1. lifecycle / dirty-tree checkpoint po utworzeniu taska;
+2. lifecycle artefaktów preflight/context/candidate przed approval;
+3. przeliczenie accepted scene hash po zmianie `candidate -> accepted`;
+4. obowiązkowe ludzkie `why` przed kanonicznym zapisem;
+5. minimalny impact report + deterministyczny smoke proof.
 
-## 6. Potwierdzone rezultaty
+Wyłączone pozostają browser helper, integracja API/model automation, autonomiczny agent/approval, AI Guard, graf semantyczny, pełny IdeaOps, dashboard/GUI, eksport, vector DB, multi-user, agent framework i multi-agent.
 
-### OBSERVED WORKING RESULT
+## 6. Model odpowiedzialności w tym slice
 
-- Workflow B3 → B2 → RR doprowadził do kompletnego pakietu pierwszego sezonu „Przygód Liścionka”.
-- S2 Studio doprowadziło do zaakceptowanego working draftu E01.
-- E02 przeszedł review jako PASS WITH MINOR FIX bez potrzeby zmiany struktury lub kanonu.
+```text
+candidate artifact = proposal, not canon
+impact report = review evidence, not authority
+human approve --why = semantic decision
+canonical scene write = consequence after human decision
+decision log + Git = durable evidence
+```
 
-### EXECUTABLE MECHANISM — CZĘŚCIOWY
+ScriptOps nie dostaje własnej interpretacji intencji, własnej effect authority ani autonomicznego planowania celu.
 
-- `legacy/scriptops-v2-single.py` uruchamia się.
-- Potwierdzono inicjalizację projektu, kontrolę stanu, utworzenie sceny, zmianę statusu sceny i automatyczne commity Git.
-- Prototyp v2 nie jest implementacją v5 RC1.
+## 7. Implementacja Phase 6
 
-### EXISTING ARTIFACT
+Historyczny `legacy/scriptops-v2-single.py` pozostaje niezmienionym źródłem bazowym i dowodem v2.
 
-- `ScriptOps_FINAL_MASTER_PACKAGE` zawiera definicję produktu, podsumowanie decyzji, blokadę zakresu RC1, instrukcje dla Codex, kontrakty i testy na poziomie specyfikacji oraz materiały post-MVP.
+`phase6/scriptops-v2-hardening.py` ładuje go jako execution substrate i dodaje tylko audytowalne checkpointy B1–B5. To jest hardening shim, nie nowy produkt i nie rewrite.
 
-### ACCESS CHECK — GITHUB SIDE COMPLETE
+Smoke proof: `tests/test_phase6_scriptops_smoke.py`.
+CI: `.github/workflows/phase6-scriptops-smoke.yml`.
 
-- w dostępnym zestawie repozytoriów GitHub wyszukiwanie `scriptops` wskazuje tylko `litrgratis-pixel/scriptops`;
-- wyszukiwanie repozytorium `RC1` nie zwraca późniejszej implementacji;
-- brak późniejszego RC1/Codex builda w dostępnym pakiecie GitHub;
-- lokalne/off-GitHub artefakty pozostają nieznane.
+## 8. Potwierdzone wcześniejsze rezultaty
 
-Szczegóły i porównanie v2 z RC1: `analysis/RC1_V2_GAP_2026-08-10.md`.
+- workflow B3 → B2 → RR doprowadził do kompletnego pakietu pierwszego sezonu „Przygód Liścionka”;
+- S2 Studio doprowadziło do zaakceptowanego working draftu E01;
+- E02 przeszedł review jako PASS WITH MINOR FIX;
+- historyczny v2 uruchamia się i posiada CLI/Git/task/context/validation/staging/approval/decision-log mechanics;
+- GitHub-side access check jest zakończony;
+- v2-vs-RC1 gap jest ograniczony dla Phase 6 do B1–B5.
 
-## 7. Elementy niepotwierdzone
+## 9. Czego nadal nie wolno twierdzić
 
-- Brak dowodu implementacji ScriptOps v5 RC1.
-- Brak pełnego smoke testu RC1.
-- Brak potwierdzonego późniejszego repozytorium zgodnego z Final Master Package w dostępnym GitHubie.
-- Nie można wykluczyć lokalnego/off-GitHub wyniku Codex niedostępnego w podłączonym źródle.
-- Brak testu pełnej pętli na rzeczywistej zmianie narracyjnej.
-- Brak testu z niezależnym użytkownikiem.
-- Brak VALIDATED RESULT.
-- Browser helper, AI Guard, Rule Miner, Retcon Engine, pełny IdeaOps, dashboard i graf semantyczny pozostają post-MVP.
+- brak dowodu pełnego ScriptOps v5 RC1;
+- brak niezależnego testu z realnym użytkownikiem;
+- brak ogólnej aktywacji ScriptOps;
+- brak maturity claim;
+- brak `FUNCTIONAL_SADDLE_ACCEPTED`;
+- lokalne/off-GitHub późniejsze artefakty nadal pozostają nieznane;
+- Phase-6 mechanizm/smoke nie zastępuje brakującego live model benchmarku Saddle Phase 4.
 
-## 8. Aktualne rozjazdy
+## 10. Aktualna bramka
 
-### Finalna specyfikacja a gotowy produkt
+`PHASE 6 BOUNDED PROOF IN PROGRESS`
 
-Dokumenty określają v5 jako finalną wersję specyfikacji lub pakietu,
-ale zawierają instrukcje rozpoczęcia implementacji, nie gotowy build.
+PR Phase 6 ma przejść jednocześnie:
 
-**Werdykt:** Final Master Package jest źródłem aktualnego zakresu, ale nie dowodem wykonania programu.
+1. deterministyczny end-to-end smoke;
+2. istniejący self-containment verifier;
+3. review zakresu potwierdzający brak rewrite/new capability.
 
-### Prototyp v2 a zakres v5 RC1
-
-Porównanie z 2026-08-10 potwierdza, że v2 ma większość mechaniki potrzebnej do jednego happy-pathu: CLI, Git, task/context, walidację, staging, approve i decision log. Jednocześnie istnieją konkretne blokery wykonania:
-
-1. tworzony task pozostawia dirty tree, a `check-pre` wymaga clean tree;
-2. task/context/WebAI artifacts mogą pozostawić dirty tree przed `approve`;
-3. `approve` zmienia `candidate` na `accepted` bez przeliczenia hasha sceny;
-4. approve nie wymaga `why`;
-5. brak impact reportu i pełnego smoke testu.
-
-**Rekomendacja techniczna:** użyć `legacy/scriptops-v2-single.py` jako bazy najmniejszego jednego przypadku, zamiast przepisywać istniejące mechanizmy. To nadal rekomendacja, nie zatwierdzona decyzja o bazie.
-
-### Redukcja pracy ręcznej
-
-RC1 nadal zakłada ręczne przeniesienie odpowiedzi WebAI.
-
-**Werdykt:** to świadome ograniczenie pierwszego testu. Automatyzacja przeglądarki pozostaje osobnym kierunkiem post-MVP. Tarcie ręcznego kroku należy zmierzyć w pierwszym realnym cyklu, a nie zakładać z góry.
-
-## 9. Miejsce zatrzymania
-
-`ACCESS CHECK` po stronie dostępnego GitHuba został zakończony wynikiem:
-
-`NOT FOUND ON ACCESSIBLE GITHUB — V2 VS RC1 COMPARISON COMPLETE`.
-
-Porównanie v2 z RC1 zostało zapisane w `analysis/RC1_V2_GAP_2026-08-10.md`.
-
-Zgodnie z `DEC-SO-006` i `DEC-SO-007` następny krok jest decyzją o bazie implementacji. Nie należy rozpoczynać zmian runtime przed jej zatwierdzeniem.
-
-## 10. Rzeczywista blokada
-
-`BASE SELECTION DECISION REQUIRED`
-
-Rekomendacja: wybrać `legacy/scriptops-v2-single.py` jako bazę najmniejszej naprawy jednego end-to-end happy-pathu i wdrożyć tylko blokery B1–B5 opisane w analizie.
+Dopiero po zielonym dowodzie można uznać B1–B5 za technicznie zamknięte.
 
 ## 11. Jeden następny krok
 
-Człowiek zatwierdza albo odrzuca użycie `legacy/scriptops-v2-single.py` jako bazy dla jednego minimalnego end-to-end przypadku ScriptOps.
-
-Po zatwierdzeniu implementacja powinna ograniczyć się do najmniejszego delta potrzebnego dla: task → context → candidate → validation → impact → human approve z `why` → poprawny hash → Git commit → smoke test.
+Doprowadzić PR Phase 6 do zielonego smoke + repository continuity verification, zapisać evidence i scalić bounded hardening. Następnie wrócić do Saddle z dokładnym wynikiem: co przeszło, czego nadal nie dowiedziono i jaki gate jest następny.
 
 ## 12. Źródła szczegółowe
 
-### Źródła zabezpieczone bezpośrednio w tym repo
-
-- `sources/Decision_Summary_Current_State.md` — aktualne podsumowanie decyzji produktu;
+- `sources/Decision_Summary_Current_State.md` — podsumowanie decyzji produktu;
 - `sources/ScriptOps_Main_Theme_Summary.md` — definicja i główne prawo produktu;
-- `sources/RC1_SCOPE_LOCK.md` — obowiązująca blokada zakresu RC1;
-- `CODEX_START.md` — samowystarczalna instrukcja rozpoczęcia etapu planowania;
-- `legacy/scriptops-v2-single.py` — pojedyncza kanoniczna kopia historycznego prototypu v2;
-- `sources/prototype/RESTORE.md` — instrukcja awaryjnego odtworzenia prototypu;
-- `scripts/restore_v2.py` — kontrola i odtworzenie kanonicznego pliku;
-- `sources/prototype/scriptops-v2-single.py.part01` … `part07` — transportowy zapis pełnej treści prototypu v2;
-- `RECONSTRUCTION_REPORT.md` i `SOURCE_AUDIT_SUMMARY.md` — historia, dowody i granice rekonstrukcji;
-- `analysis/RC1_V2_GAP_2026-08-10.md` — aktualny access check i porównanie wykonawcze.
+- `sources/RC1_SCOPE_LOCK.md` — blokada zakresu RC1;
+- `CODEX_START.md` — historyczny kontrakt startowy Codex;
+- `legacy/scriptops-v2-single.py` — wybrana historyczna baza;
+- `analysis/RC1_V2_GAP_2026-08-10.md` — access check i B1–B5;
+- `DECISION_LOG.md` — DEC-SO-010;
+- `phase6/scriptops-v2-hardening.py` — ograniczony hardening shim;
+- `tests/test_phase6_scriptops_smoke.py` — proof path;
+- `scripts/restore_v2.py` + `sources/prototype/` — dowód odtwarzalności historycznego v2;
+- `RECONSTRUCTION_REPORT.md` i `SOURCE_AUDIT_SUMMARY.md` — historia rekonstrukcji.
