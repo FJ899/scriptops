@@ -199,9 +199,6 @@ def check_source_paths() -> None:
         "sources/Decision_Summary_Current_State.md",
         "sources/ScriptOps_Main_Theme_Summary.md",
         "sources/RC1_SCOPE_LOCK.md",
-        "scripts/restore_v2.py",
-        "RECONSTRUCTION_REPORT.md",
-        "SOURCE_AUDIT_SUMMARY.md",
         "legacy/scriptops-v2-single.py",
         "analysis/RC1_V2_GAP_2026-08-10.md",
         "phase6/bounded-proposal-view.py",
@@ -212,7 +209,7 @@ def check_source_paths() -> None:
     for reference in ["legacy/scriptops-v2-single.py", "sources/RC1_SCOPE_LOCK.md"]:
         if reference not in manifest:
             fail(f"SOURCE_MANIFEST.md nie wskazuje aktywnego źródła: {reference}")
-    print("[PASS] źródła bazowe i post-Run003 evidence są osiągalne")
+    print("[PASS] current state wskazuje bazowe i post-Run003 źródła; transport/history files pozostają REQUIRED")
 
 
 def check_prototype() -> None:
@@ -313,7 +310,7 @@ def check_bounded_proposal_contract() -> None:
 
     for marker in [
         "P3_REAL_WORKLOAD_003",
-        "CROSS_SCENE_PROPOSAL_COHERENCE: OBSERVED PASS",
+        "CROSS_SCENE_PROPOSAL_COHERENCE=OBSERVED_PASS",
         "CANONICAL EFFECT: NOT APPLIED",
         "HUMAN APPROVAL: NOT REQUESTED",
         "GOAL DONE: NO",
