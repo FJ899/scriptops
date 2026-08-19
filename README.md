@@ -4,7 +4,7 @@ Repozytorium lokalnego stanu projektu **Narzędzie pisarskie / ScriptOps**.
 
 ## Status
 
-`PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / NO MATURITY CLAIM`
+`PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / NO MATURITY CLAIM / POST-SADDLE STATE RECONCILED`
 
 Jawna decyzja użytkownika: `legacy/scriptops-v2-single.py` jest bazą Phase 6. `REWRITE: NO`. `NEW CAPABILITY: NO`.
 
@@ -67,7 +67,13 @@ python -m unittest discover -s tests -p 'test_phase6_*.py' -v
 python scripts/verify_repository.py
 ```
 
-Na zweryfikowanym head PR #7 oba GitHub Actions checks zakończyły się sukcesem; finalny head po zapisaniu evidence również musi pozostać zielony przed merge.
+PR #7 został zweryfikowany i scalony. Jego merge commit jest aktualnym historycznym checkpointem Phase 6: `daa6e5dc210e09171a530eeffe5601e0e74ae041`.
+
+## Downstream Saddle context — accepted external fact
+
+Historyczny następny gate `SADDLE LIVE MODEL EVIDENCE NEXT` został później zamknięty w repo Saddle. `FUNCTIONAL_SADDLE_ACCEPTED` jest zaakceptowanym faktem Saddle i **nie** podnosi automatycznie maturity ScriptOps.
+
+ScriptOps nadal ma tylko własny udowodniony zakres Phase 6 i `MATURITY CLAIM: NONE`.
 
 ## Zakaz rozbudowy
 
@@ -75,8 +81,8 @@ Nie dodawać browser helpera, direct model/API automation, autonomous approval, 
 
 ## Co dalej
 
-Po merge Phase 6 wynik wraca do Saddle. Następnym brakującym dowodem jest live AI-worker benchmark/effect path; ScriptOps nie powinien być dalej rozbudowywany przed tym gate'em.
+Nie wracać do merge PR #7 ani do historycznego Saddle live-worker gate.
+
+Najbliższa praca ekosystemowa może użyć **istniejącego** mechanizmu Phase 6 w jednym materially-different bounded workload. To jest working evaluation, nie aktywacja nowego produktu ani zgoda na nowe capability. Dokładny workload i jego evidence contract muszą pozostać w granicach istniejących możliwości i Human approval.
 
 `MATURITY CLAIM`: **NONE**.
-
-`FUNCTIONAL_SADDLE_ACCEPTED`: **NOT YET**.
