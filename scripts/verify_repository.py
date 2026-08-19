@@ -113,14 +113,32 @@ def check_status_consistency() -> None:
         ],
     )
 
-    stale_current_markers = [
-        "SADDLE LIVE MODEL EVIDENCE NEXT",
-        "FUNCTIONAL_SADDLE_ACCEPTED: NOT YET",
-        "FINAL PR HEAD MUST REMAIN GREEN BEFORE MERGE",
-        "merge_phase6_then_return_to_saddle_live_model_evidence",
-    ]
-    for path in ["README.md", "PROJECT_STATE.md", "HANDOFF.md"]:
-        forbid_markers(path, stale_current_markers)
+    # Historical text may still name old gates, but startup/current-state language
+    # must not present those already-closed gates as current blockers or next steps.
+    forbid_markers(
+        "PROJECT_STATE.md",
+        [
+            'status: "PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / NO MATURITY CLAIM / SADDLE LIVE MODEL EVIDENCE NEXT"',
+            "FUNCTIONAL_SADDLE_ACCEPTED: NOT YET",
+            "Po zielonym finalnym headzie i merge PR #7",
+        ],
+    )
+    forbid_markers(
+        "README.md",
+        [
+            "`FUNCTIONAL_SADDLE_ACCEPTED`: **NOT YET**",
+            "Po merge Phase 6 wynik wraca do Saddle.",
+            "Następnym brakującym dowodem jest live AI-worker benchmark/effect path",
+        ],
+    )
+    forbid_markers(
+        "HANDOFF.md",
+        [
+            'blocker: "FINAL PR HEAD MUST REMAIN GREEN BEFORE MERGE"',
+            'next_step: "merge_phase6_then_return_to_saddle_live_model_evidence"',
+            "`FUNCTIONAL_SADDLE_ACCEPTED`: `NOT YET`",
+        ],
+    )
 
     print("[PASS] current README/state/handoff są pogodzone po Phase 6 i późniejszym Saddle closure")
 
