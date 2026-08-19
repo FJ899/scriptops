@@ -30,10 +30,16 @@ REQUIRED_FILES = [
     "continuity/COLD_START_AUDIT-001.md",
     "analysis/RC1_V2_GAP_2026-08-10.md",
     "evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md",
+    "evidence/P3_REAL_WORKLOAD_003_SCENE12_27_2026-08-19.md",
     "scripts/restore_v2.py",
     "legacy/scriptops-v2-single.py",
     "phase6/scriptops-v2-hardening.py",
+    "phase6/bounded-proposal-view.py",
     "tests/test_phase6_scriptops_smoke.py",
+    "tests/test_phase6_review_task_identity.py",
+    "tests/test_phase6_bounded_proposal_view.py",
+    "tests/test_phase6_p3_real_workload_003.py",
+    "tests/test_phase6_p3_evidence_record_003.py",
     ".github/workflows/phase6-scriptops-smoke.yml",
     ".github/pull_request_template.md",
     "sources/Decision_Summary_Current_State.md",
@@ -83,13 +89,21 @@ def check_status_consistency() -> None:
     require_markers(
         "PROJECT_STATE.md",
         [
-            "PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / NO MATURITY CLAIM / POST-SADDLE STATE RECONCILED",
+            "PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / BOUNDED PROPOSAL VIEW INTEGRATED / P3 RUN003 OBSERVED PASS / GOAL DONE NO / NO MATURITY CLAIM",
             "legacy/scriptops-v2-single.py",
             "REWRITE: NO",
             "NEW CAPABILITY: NO",
+            "MINIMALNY BOUNDED PROPOSAL VIEW DLA CROSS-SCENE COHERENCE",
+            "BEZ ATOMIC APPROVAL",
             "Późniejsze `FUNCTIONAL_SADDLE_ACCEPTED` jest zaakceptowanym faktem repo Saddle",
             "evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md",
-            "PR #7: `merged=true`",
+            "evidence/P3_REAL_WORKLOAD_003_SCENE12_27_2026-08-19.md",
+            "phase6/bounded-proposal-view.py",
+            "### Phase-6 proof — PR #7",
+            "### Bounded proposal view — PR #14",
+            "### P3 Real Workload 003 — PR #16",
+            "WAITING_FOR_EVIDENCE / HUMAN_SEMANTIC_DECISION",
+            "GOAL_DONE: NO",
         ],
     )
     require_markers(
@@ -104,17 +118,20 @@ def check_status_consistency() -> None:
     require_markers(
         "HANDOFF.md",
         [
-            'activation: "BOUNDED PHASE 6 PROOF COMPLETE"',
-            'blocker: "NO CURRENT LOCAL PRODUCT BLOCKER"',
-            'next_step: "bounded_materially_different_evaluation_using_existing_phase6_mechanism"',
-            'resume_contract: "REUSE V2 / NO REWRITE / NO NEW CAPABILITY / NO MATURITY CLAIM"',
+            'activation: "BOUNDED PHASE 6 PROOF COMPLETE / BOUNDED PROPOSAL VIEW INTEGRATED"',
+            'blocker: "WAITING FOR AUTHORITATIVE DOWNSTREAM EVIDENCE OR HUMAN SEMANTIC DECISION"',
+            'next_step: "human_owned_next_input_for_scene12_27_goal"',
+            'resume_contract: "REUSE V2 / BOUNDED PROPOSAL VIEW / NO ATOMIC APPROVAL / NO MATURITY CLAIM"',
             "DEC-SO-010",
-            "PR #7 został zweryfikowany i scalony",
+            "PR #14",
+            "PR #16",
+            "CROSS_SCENE_PROPOSAL_COHERENCE: OBSERVED PASS",
+            "GOAL_DONE: NO",
         ],
     )
 
     # Historical text may still name old gates, but startup/current-state language
-    # must not present those already-closed gates as current blockers or next steps.
+    # must not present those already-closed gates or executed evaluation items as current.
     forbid_markers(
         "PROJECT_STATE.md",
         [
@@ -135,12 +152,14 @@ def check_status_consistency() -> None:
         "HANDOFF.md",
         [
             'blocker: "FINAL PR HEAD MUST REMAIN GREEN BEFORE MERGE"',
+            'blocker: "NO CURRENT LOCAL PRODUCT BLOCKER"',
             'next_step: "merge_phase6_then_return_to_saddle_live_model_evidence"',
+            'next_step: "bounded_materially_different_evaluation_using_existing_phase6_mechanism"',
             "`FUNCTIONAL_SADDLE_ACCEPTED`: `NOT YET`",
         ],
     )
 
-    print("[PASS] current README/state/handoff są pogodzone po Phase 6 i późniejszym Saddle closure")
+    print("[PASS] current README/state/handoff są pogodzone po bounded proposal Run 003 bez maturity promotion")
 
 
 def check_decision_and_scope() -> None:
@@ -185,13 +204,15 @@ def check_source_paths() -> None:
         "SOURCE_AUDIT_SUMMARY.md",
         "legacy/scriptops-v2-single.py",
         "analysis/RC1_V2_GAP_2026-08-10.md",
+        "phase6/bounded-proposal-view.py",
+        "evidence/P3_REAL_WORKLOAD_003_SCENE12_27_2026-08-19.md",
     ]:
         if reference not in state:
             fail(f"PROJECT_STATE.md nie wskazuje źródła: {reference}")
     for reference in ["legacy/scriptops-v2-single.py", "sources/RC1_SCOPE_LOCK.md"]:
         if reference not in manifest:
             fail(f"SOURCE_MANIFEST.md nie wskazuje aktywnego źródła: {reference}")
-    print("[PASS] źródła bazowe i analiza B1–B5 są osiągalne")
+    print("[PASS] źródła bazowe i post-Run003 evidence są osiągalne")
 
 
 def check_prototype() -> None:
@@ -251,6 +272,58 @@ def check_phase6_proof_contract() -> None:
     print("[PASS] bounded hardening B1–B5, smoke i historyczny evidence contract są obecne")
 
 
+def check_bounded_proposal_contract() -> None:
+    helper = read_text("phase6/bounded-proposal-view.py")
+    test = read_text("tests/test_phase6_bounded_proposal_view.py")
+    run003 = read_text("tests/test_phase6_p3_real_workload_003.py")
+    evidence = read_text("evidence/P3_REAL_WORKLOAD_003_SCENE12_27_2026-08-19.md")
+
+    for marker in [
+        "Explicit task-bounded proposal view",
+        "proposal_bindings",
+        "file_sha256",
+        "BOUNDED_NONCANONICAL",
+        "PROPOSAL_NOT_CANON",
+        "proposal binding SHA mismatch",
+        "bounded proposal view requires at least one explicit proposal binding",
+        "Canonical scenes were not modified",
+    ]:
+        if marker not in helper:
+            fail(f"bounded proposal helper nie zawiera: {marker}")
+
+    for marker in [
+        "test_exact_binding_builds_context_from_staged_upstream_proposal",
+        "test_binding_fails_closed_if_candidate_identity_drifts",
+        "test_bounded_context_requires_explicit_binding",
+        "UNBOUND_GLOBAL_PRECEDENCE=NO",
+        "ATOMIC_APPROVAL=NOT_ADDED",
+    ]:
+        if marker not in test:
+            fail(f"bounded proposal regression nie zawiera: {marker}")
+
+    for marker in [
+        "test_bounded_view_supports_coherent_two_scene_proposal_without_canonical_effect",
+        "CROSS_SCENE_PROPOSAL_COHERENCE=OBSERVED_PASS",
+        "CANONICAL_EFFECT=NOT_APPLIED",
+        "HUMAN_APPROVAL=NOT_REQUESTED",
+        "GOAL_DONE=NO",
+    ]:
+        if marker not in run003:
+            fail(f"P3 Run 003 test nie zawiera: {marker}")
+
+    for marker in [
+        "P3_REAL_WORKLOAD_003",
+        "CROSS_SCENE_PROPOSAL_COHERENCE: OBSERVED PASS",
+        "CANONICAL EFFECT: NOT APPLIED",
+        "HUMAN APPROVAL: NOT REQUESTED",
+        "GOAL DONE: NO",
+    ]:
+        if marker not in evidence:
+            fail(f"P3 Run 003 evidence nie zawiera: {marker}")
+
+    print("[PASS] bounded proposal view i Run 003 są source-bound, fail-closed i bez canonical promotion")
+
+
 def check_ideas_and_filters() -> None:
     ideas = read_text("IDEA_ARCHIVE.md")
     if ideas.count("## IDEA-SO-") < 12:
@@ -289,9 +362,10 @@ def main() -> None:
     check_source_paths()
     check_prototype()
     check_phase6_proof_contract()
+    check_bounded_proposal_contract()
     check_ideas_and_filters()
     check_continuity_audit()
-    print("[PASS] repozytorium jest samowystarczalne po current-state reconciliation; Phase 6 proof pozostaje bez maturity promotion")
+    print("[PASS] repozytorium jest samowystarczalne po post-Run003 state-plan reconciliation; Phase 6 baseline i authority boundaries pozostają zachowane")
 
 
 if __name__ == "__main__":
