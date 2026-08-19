@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -158,10 +159,19 @@ def _checkpoint_candidate_input(task_id: str, source_name: str) -> Path:
 
 
 def _latest_candidate(scene_id: str) -> Path:
-    candidates = sorted((ROOT / "staging" / "scenes").glob(f"{scene_id}-*-candidate.fountain"))
+    pattern = re.compile(
+        rf"^{re.escape(scene_id)}-v([1-9][0-9]*)-candidate\.fountain$"
+    )
+    candidates: list[tuple[int, Path]] = []
+    staging = ROOT / "staging" / "scenes"
+    if staging.is_dir():
+        for candidate in staging.iterdir():
+            match = pattern.fullmatch(candidate.name)
+            if match is not None and candidate.is_file() and not candidate.is_symlink():
+                candidates.append((int(match.group(1)), candidate))
     if not candidates:
         raise Phase6Error(f"no staged candidate for {scene_id}")
-    return candidates[-1]
+    return max(candidates, key=lambda item: item[0])[1]
 
 
 def _write_impact_report(task_id: str, source: Path) -> Path:
