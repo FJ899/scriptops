@@ -28,7 +28,11 @@ task
 
 To jest `CONTROLLED WORKFLOW MECHANISM PASS`, nie maturity claim i nie pełny ScriptOps v5 RC1.
 
-PR #7 został zweryfikowany i scalony. Current ScriptOps `main` po tym merge to `daa6e5dc210e09171a530eeffe5601e0e74ae041`.
+PR #7 został zweryfikowany i scalony. Jego merge `daa6e5dc210e09171a530eeffe5601e0e74ae041` pozostaje historycznym checkpointem przyjętego Phase-6 proof, a nie wiecznym wskaźnikiem bieżącego `main`.
+
+Późniejszy bounded security/correctness maintenance PR #10 został osobno technicznie zweryfikowany, Human-accepted i Human-authorized do merge. Wszedł do `main` jako `dae2eb084e9dea51d576a55334cc3dc1dc21bc02`, zamykając błąd leksykograficznego wyboru staged candidate (`v10` vs `v9`) oraz odrzucając symlink candidates. Nie zmienia to maturity claim, celu projektu ani zakresu Phase 6.
+
+Bieżący live `main` należy rozwiązać z GitHub przy odczycie, jeśli jest potrzebny do consequential work; zapisane tutaj SHA są checkpointami provenance, nie remote lockiem.
 
 ## 2. Definicja projektu
 
@@ -47,6 +51,7 @@ AI tworzy kandydatów. ScriptOps przygotowuje kontekst, kontroluje strukturę i 
 7. 2026-08-10 człowiek wybrał v2 jako bazę Saddle Phase 6: reuse + hardening + proof, bez rewrite i nowych capability.
 8. PR #7 udowodnił bounded workflow smoke oraz repository continuity verification i został scalony do `main`.
 9. Późniejsza zaakceptowana historia Saddle zamknęła historyczny gate `SADDLE LIVE MODEL EVIDENCE NEXT`; nie zmienia to lokalnego maturity claim ScriptOps.
+10. Późniejszy real pilot ujawnił błąd wyboru staged candidate po nazwie; fresh maintenance PR #10 odbudowany z aktualnego `main` dodał numeric-version selection, symlink rejection i dedykowane regresje, po czym został Human-authorized i scalony.
 
 ## 4. Aktualne decyzje użytkownika
 
@@ -90,21 +95,38 @@ Historyczny `legacy/scriptops-v2-single.py` pozostaje niezmienionym źródłem b
 
 `phase6/scriptops-v2-hardening.py` ładuje go jako execution substrate i dodaje wyłącznie audytowalne checkpointy B1–B5. To hardening shim, nie nowy produkt i nie rewrite.
 
+Późniejszy PR #10 zmienia wyłącznie istniejącą funkcję wyboru staged candidate: wersja jest parsowana numerycznie, najwyższy integer wygrywa, a symlink/malformed candidate nie jest kwalifikowany. Dedykowany test regresyjny: `tests/test_phase6_candidate_selection.py`.
+
 Proof:
 - `tests/test_phase6_scriptops_smoke.py`;
+- `tests/test_phase6_candidate_selection.py`;
 - `.github/workflows/phase6-scriptops-smoke.yml`;
 - `scripts/verify_repository.py`;
 - `evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md`.
 
-## 8. Zweryfikowany i scalony wynik PR #7
+## 8. Zweryfikowane i scalone checkpointy
+
+### Phase-6 proof — PR #7
 
 GitHub potwierdza:
 
 - PR #7: `merged=true`;
 - accepted implementation head: `acbfca79f96407dbd46f9806bf821caf6e02e1af`;
-- merge/current Phase-6 checkpoint: `daa6e5dc210e09171a530eeffe5601e0e74ae041`.
+- merge/historyczny Phase-6 checkpoint: `daa6e5dc210e09171a530eeffe5601e0e74ae041`.
 
 Przed merge zaobserwowano sukces Phase 6 ScriptOps smoke i repository continuity verification. Historyczne wymaganie „finalny head musi pozostać zielony przed merge” jest spełnionym warunkiem historycznym, nie bieżącym blockerem.
+
+### Candidate-selection maintenance — PR #10
+
+- fresh candidate rebuilt from `main@5af0cd8ac65e72ae534827c677fe4bd12b23e4ca`;
+- Human-accepted exact head: `410b2d7b9b75988eb3343e2f4a99dade0f2608d2`;
+- `Verify repository state` #27: PASS;
+- `Phase 6 ScriptOps smoke` #12: PASS;
+- separate Human merge authority: ACCEPTED;
+- merge: `dae2eb084e9dea51d576a55334cc3dc1dc21bc02`;
+- old pilot PR #8: `CLOSED / UNMERGED / SUPERSEDED / SUPPORTING PROVENANCE`.
+
+To jest bounded correctness/security maintenance. Nie jest nową capability, maturity promotion ani nową authority.
 
 ## 9. Czego nadal nie wolno twierdzić
 
@@ -114,7 +136,7 @@ Przed merge zaobserwowano sukces Phase 6 ScriptOps smoke i repository continuity
 - brak AI model quality claim dla ScriptOps;
 - brak production identity/request-origin provider jako capability ScriptOps.
 
-Nie wolno już natomiast przedstawiać merge PR #7, live Saddle ModelGateway proof ani `FUNCTIONAL_SADDLE_ACCEPTED` jako otwartych lokalnych blockerów ScriptOps — są to historyczne checkpointy poza aktualnym lokalnym stanem pracy.
+Nie wolno już natomiast przedstawiać merge PR #7, live Saddle ModelGateway proof, `FUNCTIONAL_SADDLE_ACCEPTED` ani numeric candidate-selection P0 jako otwartych lokalnych blockerów ScriptOps — są to zamknięte checkpointy/historyczne findings poza aktualnym lokalnym product-development state.
 
 ## 10. Zakaz rozbudowy pozostaje aktywny
 
@@ -136,6 +158,7 @@ Najbliższa praca w bieżącej sekwencji ewaluacyjnej może użyć **istniejące
 - `DECISION_LOG.md` — DEC-SO-010;
 - `phase6/scriptops-v2-hardening.py`;
 - `tests/test_phase6_scriptops_smoke.py`;
+- `tests/test_phase6_candidate_selection.py`;
 - `evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md`;
 - `scripts/restore_v2.py` + `sources/prototype/`;
 - `RECONSTRUCTION_REPORT.md` i `SOURCE_AUDIT_SUMMARY.md`;
