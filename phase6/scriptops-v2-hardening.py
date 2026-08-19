@@ -19,6 +19,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from types import ModuleType
@@ -99,15 +100,37 @@ def _task_pack(task_id: str) -> dict:
     return value
 
 
+def _wait_for_unused_review_slot() -> None:
+    """Avoid legacy second-resolution TASK ids reusing an existing task directory."""
+    deadline = time.monotonic() + 2.5
+    while True:
+        task_id = f"TASK-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        if not (ROOT / "tasks" / task_id).exists():
+            return
+        if time.monotonic() >= deadline:
+            raise Phase6Error("cannot obtain unused review task id; retry review")
+        time.sleep(0.05)
+
+
 def cmd_review(args: argparse.Namespace) -> None:
     """B1: the task becomes a durable checkpoint before preflight."""
     _require_clean("review pre-state")
+    before_packs = {
+        path.resolve()
+        for path in (ROOT / "tasks").glob("TASK-*/task-pack.yaml")
+        if path.is_file()
+    }
+    _wait_for_unused_review_slot()
     before = set(_dirty_paths())
     legacy.cmd_review(args)
     changed = set(_dirty_paths()) - before
     packs = [ROOT / p for p in changed if p.startswith("tasks/") and p.endswith("/task-pack.yaml")]
     if len(changed) != 1 or len(packs) != 1:
         raise Phase6Error(f"review produced unexpected delta: {sorted(changed)}")
+    if packs[0].resolve() in before_packs:
+        rel = str(packs[0].relative_to(ROOT))
+        _git("checkout", "--", rel, check=False)
+        raise Phase6Error("review task id collision detected; existing task restored")
     task_id = packs[0].parent.name
     _commit_paths(f"scriptops phase6: checkpoint task {task_id}", packs)
     print(f"[PHASE6] Task checkpoint committed: {task_id}")
