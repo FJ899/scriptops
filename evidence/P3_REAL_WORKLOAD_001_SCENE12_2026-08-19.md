@@ -1,7 +1,7 @@
 # P3 REAL WORKLOAD 001 — SCENA 12 / usunięcie fizycznego nośnika
 
 Date: 2026-08-19
-Status: `EVALUATION CANDIDATE / CI PENDING / NO CANONICAL APPROVAL`
+Status: `OBSERVED WORKING RESULT / LOCAL CONTROL PASS / STRUCTURAL COVERAGE INSUFFICIENT / NO CANONICAL APPROVAL`
 Authority: `USER-PROVIDED TEST MATERIAL + USER-PROVIDED CHANGE GOAL`
 Semantic scope: `P3 WORKING EVALUATION / NOT MATURITY CLAIM / NOT PRODUCT ACTIVATION`
 
@@ -78,7 +78,7 @@ To jest `AI RECOMMENDATION / CANDIDATE`, nie Human decision i nie canon.
 
 ## 4. Wymagany structural-impact check
 
-Przed jakimkolwiek approval test musi rozdzielić co najmniej te zależności:
+Przed jakimkolwiek approval test rozdziela co najmniej te zależności:
 
 1. `pendrive` jako fizyczny obiekt — ma zniknąć;
 2. `oryginał` — musi dostać nową semantyczną tożsamość jako źródłowy pakiet;
@@ -119,17 +119,54 @@ user scene fixture
 → STOP before approve --why
 ```
 
-## 7. Expected evidence boundary before CI
+Pierwszy run #13 poprawnie zatrzymał się na błędzie samego test harnessu: case-sensitive assertion oczekiwał małej litery w frazie, mimo że kandydat zawierał wymagane dane. Ten błąd nie był przypisany ScriptOps i został poprawiony wyłącznie w teście.
 
-- `MECHANISM_CONTROL`: expected PASS
-- `CANDIDATE_REWRITE`: expected PASS
-- `CANONICAL_EFFECT`: expected NOT APPLIED
-- `HUMAN_APPROVAL`: NOT REQUESTED
-- `DOWNSTREAM_DEPENDENCY_COVERAGE`: expected `INSUFFICIENT EVIDENCE` unless the current impact artifact actually establishes affected-scene/dependency coverage
+Fresh corrected run:
+
+- `Phase 6 ScriptOps smoke` #14 / run `32223864081`: PASS;
+- `Verify repository state` #32 / run `32223864065`: PASS.
+
+Log run #14 emituje:
+
+```text
+P3_REAL_WORKLOAD_001: MECHANISM_CONTROL=PASS; CANDIDATE_REWRITE=PASS; CANONICAL_EFFECT=NOT_APPLIED; DOWNSTREAM_DEPENDENCY_COVERAGE=INSUFFICIENT_EVIDENCE; HUMAN_APPROVAL=NOT_REQUESTED
+```
+
+## 7. Observed result
+
+### PASS — controlled candidate lifecycle
+
+- Human goal został zmaterializowany w bounded `rewrite-scene` task-pack;
+- preflight i context-build przeszły;
+- kandydat usuwa `pendrive` i zachowuje `ARCHIWUM`, nagrania/umowy/zdjęcia, lokalną kopię oraz źródłowy pakiet bez fizycznego nośnika;
+- `check-post` stagedował kandydata;
+- `impact-report.json` ma `REVIEW_REQUIRED` i `requires_human_decision=true`;
+- canonical `SCN-012` pozostał dokładnie niezmieniony;
+- `.scriptops/decision-log.ndjson` nie powstał, bo nie było Human approval.
+
+### INSUFFICIENT EVIDENCE — project-wide structural impact
+
+Aktualny Phase-6 `impact-report.json` kontroluje proponowany lokalny efekt na `scenes/SCN-012.fountain`, ale nie ustanawia pól ani dowodu dla:
+
+- `affected_scenes`;
+- `dependency_analysis`;
+- `downstream_dependencies`.
+
+W tym workloadzie nie dostarczono też późniejszych scen projektu, więc nie istnieje niezależny materiał, z którego można uczciwie potwierdzić wszystkie odwołania do oryginału, kopii, sejfu, czerwonego nośnika albo kontroli danych przez Adama.
+
+Wynik dla Human goal:
+
+`LOCAL REWRITE CANDIDATE: OBSERVED PASS`
+
+`ALL DOWNSTREAM DEPENDENCIES PRESERVED: NOT ESTABLISHED / INSUFFICIENT EVIDENCE`
+
+`GOAL DONE: NO`
+
+To jest realne rozróżnienie między kontrolowaną edycją sceny a operacją na strukturze całego projektu.
 
 ## 8. Must not be inferred
 
-This run must not be promoted into:
+Ten run nie może być promowany do:
 
 - ScriptOps maturity claim;
 - proof of project-wide Narrative Change Impact Engine;
@@ -137,3 +174,9 @@ This run must not be promoted into:
 - Human approval of the candidate rewrite;
 - authorization to write canonical `SCN-012`;
 - authorization for new product capability, model/API integration, release, deploy or roadmap expansion.
+
+## 9. Next evidence requirement
+
+Aby rozstrzygnąć, czy problem wynika tylko z braku danych wejściowych, czy także z braku mechanizmu project-wide impact analysis, kolejny test powinien dostać **rzeczywisty późniejszy materiał projektu** zawierający co najmniej jedno zależne odwołanie do tej sceny (np. do oryginału/kopii/sejfu/posiadania danych przez Adama).
+
+Do tego czasu nie należy ani zatwierdzać kandydata jako canonical change, ani deklarować, że Human goal został osiągnięty.
