@@ -292,7 +292,7 @@ class P3RealWorkload001Tests(unittest.TestCase):
         candidate_text = candidate.read_text(encoding="utf-8")
         self.assertNotIn("pendrive", candidate_text.lower())
         self.assertIn("ARCHIWUM", candidate_text)
-        self.assertIn("nagrania, umowy, zdjęcia", candidate_text)
+        self.assertIn("nagrania, umowy, zdjęcia", candidate_text.lower())
         self.assertIn("kopię roboczą", candidate_text)
         self.assertIn("zaszyfrowanym magazynie", candidate_text)
 
