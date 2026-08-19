@@ -2,9 +2,9 @@
 project: "Narzędzie pisarskie / ScriptOps"
 canonical_name: "ScriptOps"
 cos_status: "QUEUED #1"
-status: "PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / NO MATURITY CLAIM / SADDLE LIVE MODEL EVIDENCE NEXT"
+status: "PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / NO MATURITY CLAIM / POST-SADDLE STATE RECONCILED"
 reconstructed_at: "2026-07-27"
-updated_at: "2026-08-10"
+updated_at: "2026-08-19"
 state_owner: "PROJECT_STATE.md"
 ---
 
@@ -28,6 +28,8 @@ task
 
 To jest `CONTROLLED WORKFLOW MECHANISM PASS`, nie maturity claim i nie pełny ScriptOps v5 RC1.
 
+PR #7 został zweryfikowany i scalony. Current ScriptOps `main` po tym merge to `daa6e5dc210e09171a530eeffe5601e0e74ae041`.
+
 ## 2. Definicja projektu
 
 ScriptOps jest lokalnym systemem kontroli prawdy, decyzji i zmian dla projektów narracyjnych oraz innych projektów intensywnie wykorzystujących idee i AI.
@@ -43,7 +45,8 @@ AI tworzy kandydatów. ScriptOps przygotowuje kontekst, kontroluje strukturę i 
 5. Final Master Package zamknął zakres MVP RC1.
 6. GitHub-side access check nie znalazł późniejszego RC1 builda; analiza v2 wskazała B1–B5.
 7. 2026-08-10 człowiek wybrał v2 jako bazę Saddle Phase 6: reuse + hardening + proof, bez rewrite i nowych capability.
-8. PR #7 udowodnił bounded workflow smoke oraz repository continuity verification.
+8. PR #7 udowodnił bounded workflow smoke oraz repository continuity verification i został scalony do `main`.
+9. Późniejsza zaakceptowana historia Saddle zamknęła historyczny gate `SADDLE LIVE MODEL EVIDENCE NEXT`; nie zmienia to lokalnego maturity claim ScriptOps.
 
 ## 4. Aktualne decyzje użytkownika
 
@@ -55,8 +58,9 @@ Obowiązują `DEC-SO-001`…`DEC-SO-010`, w szczególności:
 - `REWRITE: NO`;
 - `NEW CAPABILITY: NO`;
 - Phase 6 = `reuse + hardening + proof`;
-- `MATURITY CLAIM: NONE`;
-- `FUNCTIONAL_SADDLE_ACCEPTED: NOT YET`.
+- `MATURITY CLAIM: NONE`.
+
+Późniejsze `FUNCTIONAL_SADDLE_ACCEPTED` jest zaakceptowanym faktem repo Saddle, nie lokalną decyzją ScriptOps i nie promocją ScriptOps do wyższego maturity.
 
 ## 5. Zamknięty zakres B1–B5
 
@@ -92,24 +96,25 @@ Proof:
 - `scripts/verify_repository.py`;
 - `evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md`.
 
-## 8. Zweryfikowane wyniki PR #7
+## 8. Zweryfikowany i scalony wynik PR #7
 
-Na head `f5560719530ffe07c5f61524007839431eee43e1` zaobserwowano jednocześnie:
+GitHub potwierdza:
 
-- `Phase 6 ScriptOps smoke` run `31421551632` → `success`;
-- `Verify repository state` run `31421551982` → `success`.
+- PR #7: `merged=true`;
+- accepted implementation head: `acbfca79f96407dbd46f9806bf821caf6e02e1af`;
+- merge/current Phase-6 checkpoint: `daa6e5dc210e09171a530eeffe5601e0e74ae041`.
 
-Finalny head po zapisaniu evidence/statusu musi również pozostać zielony przed merge.
+Przed merge zaobserwowano sukces Phase 6 ScriptOps smoke i repository continuity verification. Historyczne wymaganie „finalny head musi pozostać zielony przed merge” jest spełnionym warunkiem historycznym, nie bieżącym blockerem.
 
 ## 9. Czego nadal nie wolno twierdzić
 
 - brak ScriptOps v5/RC1 maturity claim;
-- brak niezależnego zewnętrznego user testu;
+- brak niezależnego zewnętrznego user testu ScriptOps;
 - brak produkcyjnego narrative-value claim;
-- brak AI model quality claim;
-- brak live Saddle ModelGateway → Executor proof;
-- brak production identity/request-origin provider;
-- brak `FUNCTIONAL_SADDLE_ACCEPTED`.
+- brak AI model quality claim dla ScriptOps;
+- brak production identity/request-origin provider jako capability ScriptOps.
+
+Nie wolno już natomiast przedstawiać merge PR #7, live Saddle ModelGateway proof ani `FUNCTIONAL_SADDLE_ACCEPTED` jako otwartych lokalnych blockerów ScriptOps — są to historyczne checkpointy poza aktualnym lokalnym stanem pracy.
 
 ## 10. Zakaz rozbudowy pozostaje aktywny
 
@@ -117,7 +122,9 @@ Nie dodawać browser helpera, model/API automation, autonomous approval, agent f
 
 ## 11. Jeden następny krok
 
-Po zielonym finalnym headzie i merge PR #7 przekazać evidence do Saddle i wrócić do nadal otwartego live AI-worker benchmark/effect proof (Phase 4 evidence), zgodnie z decyzją użytkownika: najpierw granice, potem workflow proof, następnie większa inteligencja.
+Nie ma otwartego ScriptOps product-development gate wynikającego z Phase 6.
+
+Najbliższa praca w bieżącej sekwencji ewaluacyjnej może użyć **istniejącego** mechanizmu Phase 6 w jednym materially-different bounded workload, bez rewrite i bez new capability. Dokładny workload ma zostać wybrany na podstawie obecnego celu testu i istniejących możliwości; Human zachowuje approval, a wynik musi pozostać evidence, nie maturity claim.
 
 ## 12. Źródła szczegółowe
 
@@ -131,4 +138,5 @@ Po zielonym finalnym headzie i merge PR #7 przekazać evidence do Saddle i wróc
 - `tests/test_phase6_scriptops_smoke.py`;
 - `evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md`;
 - `scripts/restore_v2.py` + `sources/prototype/`;
-- `RECONSTRUCTION_REPORT.md` i `SOURCE_AUDIT_SUMMARY.md`.
+- `RECONSTRUCTION_REPORT.md` i `SOURCE_AUDIT_SUMMARY.md`;
+- accepted downstream context: `JTJ07/Saddle` current history through `059b218c1a8357d7c73c25c5b5089937205cbd9b`.
