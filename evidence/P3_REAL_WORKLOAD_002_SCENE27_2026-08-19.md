@@ -1,11 +1,34 @@
 # P3 REAL WORKLOAD 002 — SCENA 27 / downstream dependency on Scene 12
 
 Date: 2026-08-19
-Status: `EVALUATION CANDIDATE / CI PENDING / NO CANONICAL APPROVAL`
+Status: `OBSERVED WORKING RESULT / DEPENDENCY PRESENT / CROSS-SCENE CANDIDATE COHERENCE BLOCKED / NO CANONICAL APPROVAL`
 Authority: `USER-PROVIDED DOWNSTREAM TEST MATERIAL`
 Semantic scope: `P3 WORKING EVALUATION / NOT MATURITY CLAIM / NOT PRODUCT ACTIVATION`
 
-## 1. Why this workload exists
+## 1. Observed result
+
+Fresh execution on PR #13 established:
+
+- `DEPENDENCY PRESENT: YES`
+- `UPSTREAM CANDIDATE: STAGED`
+- `DOWNSTREAM CONTEXT SOURCE: OLD CANONICAL`
+- `CROSS-SCENE CANDIDATE COHERENCE: BLOCKED`
+- `CANONICAL EFFECT: NOT APPLIED`
+- `HUMAN APPROVAL: NOT REQUESTED`
+- `GOAL DONE: NO`
+
+Exact evidence run before this record update:
+
+- `Phase 6 ScriptOps smoke` #17 / run `32229072060`: SUCCESS
+- `Verify repository state` #36 / run `32229072057`: SUCCESS
+
+The smoke log explicitly emitted:
+
+`P3_REAL_WORKLOAD_002: DEPENDENCY_PRESENT=YES; UPSTREAM_CANDIDATE=STAGED; DOWNSTREAM_CONTEXT_SOURCE=OLD_CANONICAL; CROSS_SCENE_CANDIDATE_COHERENCE=BLOCKED; CANONICAL_EFFECT=NOT_APPLIED; HUMAN_APPROVAL=NOT_REQUESTED; GOAL_DONE=NO`
+
+This is a fail-closed result, not a product failure claim and not authority to implement a new mechanism.
+
+## 2. Why this workload exists
 
 Real Workload 001 established:
 
@@ -16,7 +39,7 @@ Real Workload 001 established:
 
 The missing evidence was a real later scene that actually depends on the physical-carrier semantics. The Human supplied SCN-027, which directly depends on all of the sensitive meanings identified in Run 001.
 
-## 2. Human-provided downstream material
+## 3. Human-provided downstream material
 
 `SCENA 27 — MIESZKANIE ADAMA / NOC`
 
@@ -46,7 +69,7 @@ Adam chowa pendrive z powrotem do szuflady i przekręca klucz.
 
 Rozłącza się.
 
-## 3. Dependency reconstruction
+## 4. Dependency reconstruction
 
 SCN-027 proves that the Scene-12 change is not a local prop substitution. It depends on at least these meanings:
 
@@ -61,7 +84,7 @@ SCN-027 proves that the Scene-12 change is not a local prop substitution. It dep
 
 The Human-owned goal therefore requires at least a coherent two-scene proposal, not merely a rewritten SCN-012.
 
-## 4. Candidate semantic mapping — recommendation only
+## 5. Candidate semantic mapping — recommendation only
 
 A no-physical-carrier interpretation can preserve the dramatic invariant by mapping:
 
@@ -73,34 +96,40 @@ A no-physical-carrier interpretation can preserve the dramatic invariant by mapp
 - locked drawer → no longer a valid data-custody mechanism unless it protects some non-data credential artifact, which would itself require a separate decision;
 - `bez mojego udziału...` → can remain semantically true if Adam alone controls access.
 
-A possible SCN-027 rewrite exists, but this run deliberately does not promote or stage it until the mechanism proves that its downstream context can see the staged SCN-012 proposal rather than the old accepted SCN-012.
+A possible SCN-027 rewrite exists, but this run deliberately does not promote or stage it because the mechanism did not provide SCN-027 with the staged SCN-012 proposal as dependency context.
 
 This mapping is `AI RECOMMENDATION / NOT HUMAN DECISION / NOT CANON`.
 
-## 5. Mechanism question
+## 6. Mechanism question and answer
 
-The critical test is now narrower and falsifiable:
+Frozen question:
 
 > After a validated SCN-012 no-carrier candidate is staged but not approved, does ScriptOps build the SCN-027 rewrite context against that staged upstream candidate, or against the old canonical SCN-012 that still contains the pendrive?
 
-If SCN-027 receives the old canonical upstream scene, ScriptOps cannot yet prove a coherent multi-scene proposal before Human approval.
+Observed answer:
 
-## 6. Current implementation observation
+> `OLD CANONICAL SCN-012`.
+
+The SCN-027 context included the old physical-carrier lines, including the red pendrive and the physical-safe original semantics. It did not include the staged no-carrier candidate's one-time link / encrypted source-package semantics.
+
+Therefore ScriptOps currently cannot establish a coherent multi-scene proposal state across SCN-012 → SCN-027 before Human approval.
+
+## 7. Mechanism cause observed
 
 Current `ContextBuilder._load_scene_card` checks the canonical `scenes/` directory before `staging/scenes/`.
 
-For a downstream scene with `depends_on: [SCN-012]`, the context builder therefore has a plausible false-coherence path:
+With both representations present:
 
 ```text
 SCN-012 accepted old canon (pendrive)
 + SCN-012 staged new candidate (no pendrive)
 + SCN-027 depends_on SCN-012
-→ context-build SCN-027 may read old accepted SCN-012 first
+→ context-build SCN-027 reads old accepted SCN-012 first
 ```
 
-This is an implementation observation, not yet the test verdict. The dedicated regression must establish the behavior in execution.
+The dedicated test established that this path occurs in execution.
 
-## 7. Evaluation path
+## 8. Evaluation path
 
 Dedicated test:
 
@@ -114,30 +143,27 @@ The test creates a fresh temporary ScriptOps project with:
 - a validated/staged no-carrier SCN-012 candidate;
 - no Human approval and no canonical SCN-012 write.
 
-It then builds the rewrite context for SCN-027 and checks which upstream representation is actually present.
+It then builds the rewrite context for SCN-027 and verifies which upstream representation is actually present.
 
-## 8. Expected fail-closed interpretation
+## 9. Meaning of the result
 
-If the SCN-027 context contains the old physical-carrier SCN-012 while a staged no-carrier candidate exists, record:
+This run narrows the highest current P3 constraint:
 
-- `DEPENDENCY PRESENT: YES`
-- `UPSTREAM CANDIDATE: STAGED`
-- `DOWNSTREAM CONTEXT SOURCE: OLD CANONICAL`
-- `CROSS-SCENE CANDIDATE COHERENCE: BLOCKED`
-- `CANONICAL EFFECT: NOT APPLIED`
-- `HUMAN APPROVAL: NOT REQUESTED`
-- `GOAL DONE: NO`
+- ScriptOps can safely govern one-scene candidate/effect authority;
+- a real downstream dependency can be represented;
+- but the current context model cannot compose an unapproved upstream candidate into a downstream proposal context;
+- therefore the project-wide Human goal cannot yet be honestly declared DONE.
 
-That result is useful evidence. It must not be silently converted into a request to approve either scene.
+The next architectural/implementation question is whether ScriptOps should support a bounded multi-artifact proposal/change-set view before Human approval. That is a potential new capability/behavior and is **not authorized by this evidence record**.
 
-## 9. Must not be inferred
+## 10. Must not be inferred
 
 This workload does not authorize or establish:
 
 - canonical rewrite of SCN-012;
 - canonical rewrite of SCN-027;
 - approval of the proposed encrypted-storage HOW;
-- a new impact-engine or transaction capability;
+- implementation of a multi-scene change-set, transaction layer or impact engine;
 - ScriptOps maturity;
 - product activation;
 - model/API integration;
