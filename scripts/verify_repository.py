@@ -65,6 +65,13 @@ def require_markers(relative_path: str, markers: list[str]) -> None:
             fail(f"{relative_path} nie zawiera wymaganego wpisu: {marker}")
 
 
+def forbid_markers(relative_path: str, markers: list[str]) -> None:
+    text = read_text(relative_path)
+    for marker in markers:
+        if marker in text:
+            fail(f"{relative_path} nadal zawiera stale current-state marker: {marker}")
+
+
 def check_required_files() -> None:
     missing = [p for p in REQUIRED_FILES + PROTOTYPE_PARTS if not (ROOT / p).is_file()]
     if missing:
@@ -76,31 +83,46 @@ def check_status_consistency() -> None:
     require_markers(
         "PROJECT_STATE.md",
         [
-            "PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / NO MATURITY CLAIM / SADDLE LIVE MODEL EVIDENCE NEXT",
+            "PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / NO MATURITY CLAIM / POST-SADDLE STATE RECONCILED",
             "legacy/scriptops-v2-single.py",
             "REWRITE: NO",
             "NEW CAPABILITY: NO",
-            "FUNCTIONAL_SADDLE_ACCEPTED: NOT YET",
+            "Późniejsze `FUNCTIONAL_SADDLE_ACCEPTED` jest zaakceptowanym faktem repo Saddle",
             "evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md",
+            "PR #7: `merged=true`",
         ],
     )
     require_markers(
         "README.md",
         [
-            "PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / NO MATURITY CLAIM",
+            "PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / NO MATURITY CLAIM / POST-SADDLE STATE RECONCILED",
             "phase6/scriptops-v2-hardening.py",
-            "FUNCTIONAL_SADDLE_ACCEPTED",
+            "PR #7 został zweryfikowany i scalony",
+            "`MATURITY CLAIM`: **NONE**",
         ],
     )
     require_markers(
         "HANDOFF.md",
         [
             'activation: "BOUNDED PHASE 6 PROOF COMPLETE"',
+            'blocker: "NO CURRENT LOCAL PRODUCT BLOCKER"',
+            'next_step: "bounded_materially_different_evaluation_using_existing_phase6_mechanism"',
             'resume_contract: "REUSE V2 / NO REWRITE / NO NEW CAPABILITY / NO MATURITY CLAIM"',
             "DEC-SO-010",
+            "PR #7 został zweryfikowany i scalony",
         ],
     )
-    print("[PASS] finalny status Phase 6, README i handoff są spójne")
+
+    stale_current_markers = [
+        "SADDLE LIVE MODEL EVIDENCE NEXT",
+        "FUNCTIONAL_SADDLE_ACCEPTED: NOT YET",
+        "FINAL PR HEAD MUST REMAIN GREEN BEFORE MERGE",
+        "merge_phase6_then_return_to_saddle_live_model_evidence",
+    ]
+    for path in ["README.md", "PROJECT_STATE.md", "HANDOFF.md"]:
+        forbid_markers(path, stale_current_markers)
+
+    print("[PASS] current README/state/handoff są pogodzone po Phase 6 i późniejszym Saddle closure")
 
 
 def check_decision_and_scope() -> None:
@@ -116,7 +138,7 @@ def check_decision_and_scope() -> None:
         "FUNCTIONAL_SADDLE_ACCEPTED: NOT YET",
     ]:
         if marker not in decisions:
-            fail(f"DECISION_LOG.md nie zawiera: {marker}")
+            fail(f"DECISION_LOG.md nie zawiera historycznego wpisu: {marker}")
 
     scope = read_text("sources/RC1_SCOPE_LOCK.md")
     for phrase in [
@@ -130,7 +152,7 @@ def check_decision_and_scope() -> None:
     ]:
         if phrase not in scope:
             fail(f"RC1_SCOPE_LOCK.md nie zawiera wykluczenia: {phrase}")
-    print("[PASS] decyzja bazowa i scope lock są zachowane")
+    print("[PASS] historyczna decyzja bazowa i scope lock są zachowane bez relabelowania ich jako current")
 
 
 def check_source_paths() -> None:
@@ -208,7 +230,7 @@ def check_phase6_proof_contract() -> None:
     ]:
         if marker not in evidence:
             fail(f"Phase-6 evidence nie zawiera: {marker}")
-    print("[PASS] bounded hardening B1–B5, smoke i evidence contract są obecne")
+    print("[PASS] bounded hardening B1–B5, smoke i historyczny evidence contract są obecne")
 
 
 def check_ideas_and_filters() -> None:
@@ -251,7 +273,7 @@ def main() -> None:
     check_phase6_proof_contract()
     check_ideas_and_filters()
     check_continuity_audit()
-    print("[PASS] repozytorium jest samowystarczalne po bounded Phase 6 proof")
+    print("[PASS] repozytorium jest samowystarczalne po current-state reconciliation; Phase 6 proof pozostaje bez maturity promotion")
 
 
 if __name__ == "__main__":
