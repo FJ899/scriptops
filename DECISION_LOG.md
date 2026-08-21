@@ -111,3 +111,48 @@ Zasady:
 - brak browser/API automation, agent framework, multi-agent, GUI, vector DB, semantic graph, multi-user i innych nowych capability.
 
 Evidence: jawna decyzja użytkownika w Saddle Phase 6 + `analysis/RC1_V2_GAP_2026-08-10.md`.
+
+## DEC-SO-011 — Human semantic acceptance SCN-012 + SCN-027; canonical effect preparation only
+
+Status: `ACTIVE`
+Owner: `USER`
+Date: `2026-08-21`
+
+Decision:
+
+```text
+SCN-012 → SCN-027 WYCZERPUJE ZAMIERZONY ZAKRES TEJ DECYZJI.
+
+SCN-012 + SCN-027 PROPOSAL STATE:
+HUMAN SEMANTIC ACCEPTED
+
+NO-CARRIER GOAL FOR THIS BOUNDED SCOPE:
+SEMANTICALLY SATISFIED
+
+ACCEPTED MAPPING:
+PHYSICAL CARRIER CONTROL
+→
+ACCESS CONTROL OF ENCRYPTED AUTHORITATIVE SOURCE
+
+LOSS OF PHYSICAL PENDRIVE / DRAWER BEAT:
+NOT A BLOCKER
+
+CANONICAL EFFECT PREPARATION:
+AUTHORIZED
+
+CANONICAL EFFECT EXECUTION:
+NOT AUTHORIZED WITHOUT SEPARATE HUMAN GATE
+```
+
+Boundaries:
+
+- no additional downstream material is required for this Human decision;
+- no canonical write has been authorized or executed;
+- no `approve --why` has been executed;
+- no atomic multi-scene approval is authorized or implied;
+- no new capability, product activation or maturity claim is created;
+- `GOAL DONE` remains `NO` until the accepted effect is actually applied to a canonical target.
+
+Evidence: `evidence/P3_SCENE12_27_HUMAN_SEMANTIC_ACCEPTANCE_AND_CANONICAL_EFFECT_PREVIEW_2026-08-21.md`.
+
+Implemented by: `NOT YET — CANONICAL EFFECT REQUIRES SEPARATE HUMAN GATE`.
