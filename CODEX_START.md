@@ -1,10 +1,33 @@
+---
+document: "ScriptOps historical RC1 Codex bootstrap"
+status: "HISTORICAL / SUPERSEDED RC1 PLANNING BOOTSTRAP / NOT CURRENT ROUTE"
+reconciled_at: "2026-08-21"
+current_recovery_entry: "README.md -> PROJECT_STATE.md -> HANDOFF.md"
+---
+
 # CODEX_START — ScriptOps RC1
 
-## Tryb
+## CURRENT RECOVERY NOTICE
+
+This file preserves the historical RC1 planning bootstrap. It is **not** a current implementation instruction.
+
+Current ScriptOps state is:
+
+```text
+WAITING_FOR_EVIDENCE / HUMAN_SEMANTIC_DECISION
+```
+
+A zero-history session must recover current state from `README.md`, `PROJECT_STATE.md` and `HANDOFF.md`. No RC1 implementation, rewrite, new capability or new product phase is authorized by this file.
+
+The historical body below remains provenance for the earlier RC1 planning model.
+
+---
+
+## Tryb — HISTORICAL
 
 `PLAN FIRST / NO IMPLEMENTATION WITHOUT APPROVAL`
 
-## Pliki obowiązkowe przed pracą
+## Pliki obowiązkowe przed historyczną pracą RC1
 
 1. `README.md`
 2. `PROJECT_STATE.md`
@@ -14,7 +37,7 @@
 6. `sources/ScriptOps_Main_Theme_Summary.md`
 7. `sources/RC1_SCOPE_LOCK.md`
 
-## Pierwsza odpowiedź Codex
+## Pierwsza odpowiedź Codex — HISTORICAL
 
 Nie implementuj jeszcze.
 
@@ -38,9 +61,9 @@ Przedstaw:
 - zmiana staje się prawdą dopiero po walidacji, analizie wpływu, jawnej decyzji człowieka, zapisie uzasadnienia i commicie Git;
 - przy sprzeczności wybierz węższy zakres RC1 i zgłoś problem.
 
-## Zakres implementacyjny
+## Zakres implementacyjny — HISTORICAL / DO NOT EXECUTE AS CURRENT
 
-Buduj wyłącznie pętlę:
+Historyczny bootstrap instruował budowę wyłącznie pętli:
 
 ```text
 project init
@@ -55,7 +78,9 @@ project init
 → smoke test
 ```
 
-## Zakaz implementacji
+Ta instrukcja nie jest current route po zintegrowanym Phase 6 / bounded proposal view / Real Workloads 001–003.
+
+## Zakaz implementacji historycznego RC1
 
 Nie dodawaj:
 
@@ -75,11 +100,11 @@ Nie dodawaj:
 - voice interface;
 - cloud sync.
 
-Każdy taki element oznacz: `POST-MVP candidate, not RC1`.
+Każdy taki element był oznaczany: `POST-MVP candidate, not RC1`.
 
-## Kryterium ukończenia etapu planowania
+## Kryterium ukończenia etapu planowania — HISTORICAL
 
-Etap planowania kończy się dopiero, gdy przedstawiony plan umożliwia późniejsze sprawdzenie:
+Historyczny etap planowania kończył się dopiero, gdy przedstawiony plan umożliwiał późniejsze sprawdzenie:
 
 - `scriptops --help`;
 - inicjalizacji projektu;

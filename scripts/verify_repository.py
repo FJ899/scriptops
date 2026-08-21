@@ -109,7 +109,8 @@ def check_status_consistency() -> None:
     require_markers(
         "README.md",
         [
-            "PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / NO MATURITY CLAIM / POST-SADDLE STATE RECONCILED",
+            "PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / BOUNDED PROPOSAL VIEW INTEGRATED / P3 RUN003 OBSERVED PASS / GOAL DONE NO / NO MATURITY CLAIM",
+            "WAITING_FOR_EVIDENCE / HUMAN_SEMANTIC_DECISION",
             "phase6/scriptops-v2-hardening.py",
             "PR #7 został zweryfikowany i scalony",
             "`MATURITY CLAIM`: **NONE**",
@@ -146,6 +147,7 @@ def check_status_consistency() -> None:
             "`FUNCTIONAL_SADDLE_ACCEPTED`: **NOT YET**",
             "Po merge Phase 6 wynik wraca do Saddle.",
             "Następnym brakującym dowodem jest live AI-worker benchmark/effect path",
+            "Najbliższa praca ekosystemowa może użyć **istniejącego** mechanizmu Phase 6 w jednym materially-different bounded workload.",
         ],
     )
     forbid_markers(
@@ -160,6 +162,27 @@ def check_status_consistency() -> None:
     )
 
     print("[PASS] current README/state/handoff są pogodzone po bounded proposal Run 003 bez maturity promotion")
+
+
+def check_startup_semantic_freshness() -> None:
+    require_markers(
+        "README.md",
+        [
+            "Historyczny `materially-different bounded workload` został wykonany przez Real Workloads 001–003.",
+            "**Nie jest już current NEXT.**",
+            "`CODEX_START.md` oraz `analysis/RC1_V2_GAP_2026-08-10.md` pozostają historycznym RC1/planning provenance.",
+        ],
+    )
+    require_markers(
+        "CODEX_START.md",
+        [
+            "HISTORICAL / SUPERSEDED RC1 PLANNING BOOTSTRAP / NOT CURRENT ROUTE",
+            "current_recovery_entry: \"README.md -> PROJECT_STATE.md -> HANDOFF.md\"",
+            "WAITING_FOR_EVIDENCE / HUMAN_SEMANTIC_DECISION",
+            "No RC1 implementation, rewrite, new capability or new product phase is authorized by this file.",
+        ],
+    )
+    print("[PASS] startup semantic freshness: executed workload, historical RC1 route and closed Saddle gate cannot be recovered as current")
 
 
 def check_decision_and_scope() -> None:
@@ -355,6 +378,7 @@ def check_continuity_audit() -> None:
 def main() -> None:
     check_required_files()
     check_status_consistency()
+    check_startup_semantic_freshness()
     check_decision_and_scope()
     check_source_paths()
     check_prototype()
