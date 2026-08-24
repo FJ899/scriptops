@@ -31,6 +31,7 @@ REQUIRED_FILES = [
     "analysis/RC1_V2_GAP_2026-08-10.md",
     "evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md",
     "evidence/P3_REAL_WORKLOAD_003_SCENE12_27_2026-08-19.md",
+    "evidence/P3_SCENE12_27_HUMAN_SEMANTIC_ACCEPTANCE_AND_CANONICAL_EFFECT_PREVIEW_2026-08-21.md",
     "scripts/restore_v2.py",
     "legacy/scriptops-v2-single.py",
     "phase6/scriptops-v2-hardening.py",
@@ -89,28 +90,33 @@ def check_status_consistency() -> None:
     require_markers(
         "PROJECT_STATE.md",
         [
-            "PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / BOUNDED PROPOSAL VIEW INTEGRATED / P3 RUN003 OBSERVED PASS / GOAL DONE NO / NO MATURITY CLAIM",
+            "PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / BOUNDED PROPOSAL VIEW INTEGRATED / P3 RUN003 OBSERVED PASS / SCN-012+027 HUMAN SEMANTIC ACCEPTED / CANONICAL EFFECT PREPARED NOT APPLIED / GOAL DONE NO / NO MATURITY CLAIM",
             "legacy/scriptops-v2-single.py",
             "REWRITE: NO",
             "NEW CAPABILITY: NO",
             "MINIMALNY BOUNDED PROPOSAL VIEW DLA CROSS-SCENE COHERENCE",
             "BEZ ATOMIC APPROVAL",
+            "DEC-SO-011",
+            "Human semantic acceptance proposal state SCN-012 + SCN-027: `YES / DEC-SO-011`",
+            "canonical effect dla rewrite'ów: `NOT APPLIED`",
             "Późniejsze `FUNCTIONAL_SADDLE_ACCEPTED` jest zaakceptowanym faktem repo Saddle",
             "evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md",
             "evidence/P3_REAL_WORKLOAD_003_SCENE12_27_2026-08-19.md",
+            "evidence/P3_SCENE12_27_HUMAN_SEMANTIC_ACCEPTANCE_AND_CANONICAL_EFFECT_PREVIEW_2026-08-21.md",
             "phase6/bounded-proposal-view.py",
             "### Phase-6 proof — PR #7",
             "### Bounded proposal view — PR #14",
             "### P3 Real Workload 003 — PR #16",
-            "WAITING_FOR_EVIDENCE / HUMAN_SEMANTIC_DECISION",
+            "CANONICAL_EFFECT_PREPARED / WAITING_FOR_SEPARATE_HUMAN_EFFECT_GATE",
             "GOAL_DONE: NO",
         ],
     )
     require_markers(
         "README.md",
         [
-            "PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / BOUNDED PROPOSAL VIEW INTEGRATED / P3 RUN003 OBSERVED PASS / GOAL DONE NO / NO MATURITY CLAIM",
-            "WAITING_FOR_EVIDENCE / HUMAN_SEMANTIC_DECISION",
+            "PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / BOUNDED PROPOSAL VIEW INTEGRATED / P3 RUN003 OBSERVED PASS / SCN-012+027 HUMAN SEMANTIC ACCEPTED / CANONICAL EFFECT PREPARED NOT APPLIED / GOAL DONE NO / NO MATURITY CLAIM",
+            "CANONICAL_EFFECT_PREPARED / WAITING_FOR_SEPARATE_HUMAN_EFFECT_GATE",
+            "DEC-SO-011",
             "phase6/scriptops-v2-hardening.py",
             "PR #7 został zweryfikowany i scalony",
             "`MATURITY CLAIM`: **NONE**",
@@ -120,19 +126,21 @@ def check_status_consistency() -> None:
         "HANDOFF.md",
         [
             'activation: "BOUNDED PHASE 6 PROOF COMPLETE / BOUNDED PROPOSAL VIEW INTEGRATED"',
-            'blocker: "WAITING FOR AUTHORITATIVE DOWNSTREAM EVIDENCE OR HUMAN SEMANTIC DECISION"',
-            'next_step: "human_owned_next_input_for_scene12_27_goal"',
+            'blocker: "WAITING FOR SEPARATE HUMAN CANONICAL EFFECT GATE"',
+            'next_step: "present_exact_target_canon_and_effect_identity_for_human_gate"',
             'resume_contract: "REUSE V2 / BOUNDED PROPOSAL VIEW / NO ATOMIC APPROVAL / NO MATURITY CLAIM"',
             "DEC-SO-010",
+            "DEC-SO-011",
             "PR #14",
             "PR #16",
             "CROSS_SCENE_PROPOSAL_COHERENCE: OBSERVED PASS",
+            "CANONICAL_EFFECT_PREPARED / WAITING_FOR_SEPARATE_HUMAN_EFFECT_GATE",
             "GOAL_DONE: NO",
         ],
     )
 
     # Historical text may still name old gates, but startup/current-state language
-    # must not present those already-closed gates or executed evaluation items as current.
+    # must not present already-closed gates or executed evaluation items as current.
     forbid_markers(
         "PROJECT_STATE.md",
         [
@@ -148,6 +156,7 @@ def check_status_consistency() -> None:
             "Po merge Phase 6 wynik wraca do Saddle.",
             "Następnym brakującym dowodem jest live AI-worker benchmark/effect path",
             "Najbliższa praca ekosystemowa może użyć **istniejącego** mechanizmu Phase 6 w jednym materially-different bounded workload.",
+            "WAITING_FOR_EVIDENCE / HUMAN_SEMANTIC_DECISION",
         ],
     )
     forbid_markers(
@@ -155,13 +164,15 @@ def check_status_consistency() -> None:
         [
             'blocker: "FINAL PR HEAD MUST REMAIN GREEN BEFORE MERGE"',
             'blocker: "NO CURRENT LOCAL PRODUCT BLOCKER"',
+            'blocker: "WAITING FOR AUTHORITATIVE DOWNSTREAM EVIDENCE OR HUMAN SEMANTIC DECISION"',
             'next_step: "merge_phase6_then_return_to_saddle_live_model_evidence"',
             'next_step: "bounded_materially_different_evaluation_using_existing_phase6_mechanism"',
+            'next_step: "human_owned_next_input_for_scene12_27_goal"',
             "`FUNCTIONAL_SADDLE_ACCEPTED`: `NOT YET`",
         ],
     )
 
-    print("[PASS] current README/state/handoff są pogodzone po bounded proposal Run 003 bez maturity promotion")
+    print("[PASS] current README/state/handoff są pogodzone po DEC-SO-011 bez canonical effect")
 
 
 def check_startup_semantic_freshness() -> None:
@@ -170,6 +181,7 @@ def check_startup_semantic_freshness() -> None:
         [
             "Historyczny `materially-different bounded workload` został wykonany przez Real Workloads 001–003.",
             "**Nie jest już current NEXT.**",
+            "Human semantic decision dla `SCN-012 + SCN-027` również jest zamknięta.",
             "`CODEX_START.md` oraz `analysis/RC1_V2_GAP_2026-08-10.md` pozostają historycznym RC1/planning provenance.",
         ],
     )
@@ -178,11 +190,12 @@ def check_startup_semantic_freshness() -> None:
         [
             "HISTORICAL / SUPERSEDED RC1 PLANNING BOOTSTRAP / NOT CURRENT ROUTE",
             "current_recovery_entry: \"README.md -> PROJECT_STATE.md -> HANDOFF.md\"",
-            "WAITING_FOR_EVIDENCE / HUMAN_SEMANTIC_DECISION",
+            "CANONICAL_EFFECT_PREPARED / WAITING_FOR_SEPARATE_HUMAN_EFFECT_GATE",
+            "The Human semantic decision for `SCN-012 + SCN-027` is already closed",
             "No RC1 implementation, rewrite, new capability or new product phase is authorized by this file.",
         ],
     )
-    print("[PASS] startup semantic freshness: executed workload, historical RC1 route and closed Saddle gate cannot be recovered as current")
+    print("[PASS] startup semantic freshness: accepted semantic decision, historical RC1 route and closed Saddle gate cannot be recovered as current work")
 
 
 def check_decision_and_scope() -> None:
@@ -191,6 +204,7 @@ def check_decision_and_scope() -> None:
         "DEC-SO-001",
         "DEC-SO-009",
         "DEC-SO-010",
+        "DEC-SO-011",
         "BASE: legacy/scriptops-v2-single.py",
         "REWRITE: NO",
         "NEW CAPABILITY: NO",
@@ -226,13 +240,14 @@ def check_source_paths() -> None:
         "analysis/RC1_V2_GAP_2026-08-10.md",
         "phase6/bounded-proposal-view.py",
         "evidence/P3_REAL_WORKLOAD_003_SCENE12_27_2026-08-19.md",
+        "evidence/P3_SCENE12_27_HUMAN_SEMANTIC_ACCEPTANCE_AND_CANONICAL_EFFECT_PREVIEW_2026-08-21.md",
     ]:
         if reference not in state:
             fail(f"PROJECT_STATE.md nie wskazuje źródła: {reference}")
     for reference in ["legacy/scriptops-v2-single.py", "sources/RC1_SCOPE_LOCK.md"]:
         if reference not in manifest:
             fail(f"SOURCE_MANIFEST.md nie wskazuje aktywnego źródła: {reference}")
-    print("[PASS] current state wskazuje bazowe i post-Run003 źródła; transport/history files pozostają REQUIRED")
+    print("[PASS] current state wskazuje bazowe, Run003 i DEC-SO-011 źródła; transport/history files pozostają REQUIRED")
 
 
 def check_prototype() -> None:
@@ -386,7 +401,7 @@ def main() -> None:
     check_bounded_proposal_contract()
     check_ideas_and_filters()
     check_continuity_audit()
-    print("[PASS] repozytorium jest samowystarczalne po post-Run003 state-plan reconciliation; Phase 6 baseline i authority boundaries pozostają zachowane")
+    print("[PASS] repozytorium jest samowystarczalne po DEC-SO-011 semantic-currentness reconciliation; Phase 6 baseline i authority boundaries pozostają zachowane")
 
 
 if __name__ == "__main__":
