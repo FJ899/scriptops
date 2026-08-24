@@ -1,7 +1,7 @@
 ---
 document: "ScriptOps historical RC1 Codex bootstrap"
 status: "HISTORICAL / SUPERSEDED RC1 PLANNING BOOTSTRAP / NOT CURRENT ROUTE"
-reconciled_at: "2026-08-21"
+reconciled_at: "2026-08-24"
 current_recovery_entry: "README.md -> PROJECT_STATE.md -> HANDOFF.md"
 ---
 
@@ -14,10 +14,10 @@ This file preserves the historical RC1 planning bootstrap. It is **not** a curre
 Current ScriptOps state is:
 
 ```text
-WAITING_FOR_EVIDENCE / HUMAN_SEMANTIC_DECISION
+CANONICAL_EFFECT_PREPARED / WAITING_FOR_SEPARATE_HUMAN_EFFECT_GATE
 ```
 
-A zero-history session must recover current state from `README.md`, `PROJECT_STATE.md` and `HANDOFF.md`. No RC1 implementation, rewrite, new capability or new product phase is authorized by this file.
+A zero-history session must recover current state from `README.md`, `PROJECT_STATE.md` and `HANDOFF.md`. No RC1 implementation, rewrite, new capability or new product phase is authorized by this file. The Human semantic decision for `SCN-012 + SCN-027` is already closed; this notice does not authorize the prepared canonical effect.
 
 The historical body below remains provenance for the earlier RC1 planning model.
 
