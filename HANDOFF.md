@@ -160,7 +160,7 @@ CANONICAL_EFFECT_PREPARED / WAITING_FOR_SEPARATE_HUMAN_EFFECT_GATE
 
 Nie szukać dalszego downstream material dla tej decyzji i nie wracać do semantic review SCN-012/027.
 
-Repo `JTJ07/scriptops` jest repo narzędzia. Real workload scen był materializowany w tymczasowym projekcie ewaluacyjnym; nie wolno udawać, że zmiana plików narzędzia jest canonical screenplay effect.
+Repo `FJ899/scriptops` jest repo narzędzia. Real workload scen był materializowany w tymczasowym projekcie ewaluacyjnym; nie wolno udawać, że zmiana plików narzędzia jest canonical screenplay effect.
 
 Przed efektem trzeba przedstawić Human:
 
@@ -189,4 +189,4 @@ Dopiero osobny Human gate może autoryzować `approve --why` / canonical write.
 13. `evidence/P3_SCENE12_27_HUMAN_SEMANTIC_ACCEPTANCE_AND_CANONICAL_EFFECT_PREVIEW_2026-08-21.md`
 14. `scripts/verify_repository.py`
 
-Accepted downstream context may be checked in `JTJ07/Saddle` as supporting provenance. Local ScriptOps state remains owned by this repo.
+Accepted downstream context may be checked in `FJ899/Saddle` as supporting provenance. Local ScriptOps state remains owned by this repo.
