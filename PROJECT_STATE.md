@@ -258,7 +258,7 @@ Prepared effect jest zapisany w:
 
 `evidence/P3_SCENE12_27_HUMAN_SEMANTIC_ACCEPTANCE_AND_CANONICAL_EFFECT_PREVIEW_2026-08-21.md`.
 
-Repo `JTJ07/scriptops` jest repo narzędzia; workload scen był materializowany w tymczasowym projekcie ewaluacyjnym. Przed realnym canonical effect trzeba wskazać dokładny target project/canon, potwierdzić accepted source identities i candidate identities oraz przedstawić exact `why`. Dopiero osobny Human gate może autoryzować `approve --why` / canonical write.
+Repo `FJ899/scriptops` jest repo narzędzia; workload scen był materializowany w tymczasowym projekcie ewaluacyjnym. Przed realnym canonical effect trzeba wskazać dokładny target project/canon, potwierdzić accepted source identities i candidate identities oraz przedstawić exact `why`. Dopiero osobny Human gate może autoryzować `approve --why` / canonical write.
 
 Bez tego gate'u ScriptOps nie wykonuje canonical effect i nie deklaruje `GOAL DONE`.
 
@@ -285,4 +285,4 @@ Bez tego gate'u ScriptOps nie wykonuje canonical effect i nie deklaruje `GOAL DO
 - `evidence/P3_SCENE12_27_HUMAN_SEMANTIC_ACCEPTANCE_AND_CANONICAL_EFFECT_PREVIEW_2026-08-21.md`;
 - PR #14 Human acceptance + merge history;
 - PR #16 Human evidence acceptance + merge history;
-- accepted downstream context in `JTJ07/Saddle` is supporting provenance, not local state authority.
+- accepted downstream context in `FJ899/Saddle` is supporting provenance, not local state authority.
