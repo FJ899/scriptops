@@ -78,16 +78,42 @@ project init
 → smoke test
 ```
 
-Bez:
+Ta instrukcja nie jest current route po zintegrowanym Phase 6 / bounded proposal view / Real Workloads 001–003.
 
-- browser automation;
-- model/API automation;
-- autonomous approval;
-- multi-agent;
-- GUI/dashboard;
-- vector DB;
-- semantic graph;
+## Zakaz implementacji historycznego RC1
+
+Nie dodawaj:
+
+- browser helpera;
+- wywołań API modeli;
+- autonomicznego agenta;
+- automatycznego approve;
+- automatycznej zmiany kanonu;
 - multi-user;
-- nowych capability poza historycznym RC1 scope.
+- dashboardu ani GUI/TUI;
+- vector database;
+- automatycznego grafu semantycznego;
+- AI Guard;
+- Rule Miner;
+- Retcon Engine;
+- eksportu;
+- voice interface;
+- cloud sync.
 
-Ten zakres pozostaje historycznym planning provenance. Current ScriptOps używa istniejącego Phase-6 hardening i bounded proposal view zgodnie z `PROJECT_STATE.md`/`HANDOFF.md`.
+Każdy taki element był oznaczany: `POST-MVP candidate, not RC1`.
+
+## Kryterium ukończenia etapu planowania — HISTORICAL
+
+Historyczny etap planowania kończył się dopiero, gdy przedstawiony plan umożliwiał późniejsze sprawdzenie:
+
+- `scriptops --help`;
+- inicjalizacji projektu;
+- tworzenia zadania;
+- budowania kontekstu i HANDSHAKE v2;
+- importu kandydata;
+- walidacji strukturalnej;
+- raportu wpływu;
+- approve/reject/revision z obowiązkowym `why`;
+- commita tylko po approve;
+- wykrycia dirty state;
+- testów pytest i pełnego smoke testu.
