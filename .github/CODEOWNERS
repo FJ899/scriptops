@@ -1,0 +1,9 @@
+# X1D-F001 controlled bootstrap — authoritative rule-bearing paths
+# Human rule authority principal H: @litrgratis-pixel
+# Evaluated connector principal during bootstrap: @FJ899
+
+/DECISION_LOG.md @litrgratis-pixel
+/phase6/scriptops-v2-hardening.py @litrgratis-pixel
+/legacy/scriptops-v2-single.py @litrgratis-pixel
+/.github/ @litrgratis-pixel
+/governance/ @litrgratis-pixel
