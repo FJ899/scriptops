@@ -64,7 +64,8 @@ class TrustedHumanReview:
     state: str
     commit_id: str
     body: str
-    decision: TrustedHumanDecision
+    decision: TrustedHumanDecision | None
+    submitted_at: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,6 +91,7 @@ class TrustedStateSnapshot:
     allowed_merge_methods: tuple[str, ...]
     bypass_actors: tuple[str, ...]
     current_process_can_bypass: bool | None
+    human_reviews_complete: bool
 
 
 @runtime_checkable
@@ -276,6 +278,17 @@ def _validate_assertions(a: AdmissionAssertions) -> None:
         raise AdmissionDenied("Q_K ruleset id mismatch")
 
 
+def _validate_review_collection(snapshot: TrustedStateSnapshot) -> None:
+    if snapshot.human_reviews_complete is not True:
+        raise AdmissionDenied("Human review collection incomplete or ambiguous")
+    seen: set[str] = set()
+    for review in snapshot.human_reviews:
+        _text("Human review id", review.review_id)
+        if review.review_id in seen:
+            raise AdmissionDenied("duplicate Human review identity")
+        seen.add(review.review_id)
+
+
 def _review(snapshot: TrustedStateSnapshot, review_id: str) -> TrustedHumanReview:
     matches = [r for r in snapshot.human_reviews if r.review_id == review_id]
     if len(matches) != 1:
@@ -283,7 +296,9 @@ def _review(snapshot: TrustedStateSnapshot, review_id: str) -> TrustedHumanRevie
     return matches[0]
 
 
-def _validate_decision(d: TrustedHumanDecision, a: AdmissionAssertions) -> None:
+def _validate_decision(d: TrustedHumanDecision | None, a: AdmissionAssertions) -> None:
+    if not isinstance(d, TrustedHumanDecision):
+        raise AdmissionDenied("Human decision missing or malformed")
     pairs = {
         "decision_id": a.human_decision_id,
         "repository": a.repository,
@@ -302,6 +317,40 @@ def _validate_decision(d: TrustedHumanDecision, a: AdmissionAssertions) -> None:
     for name, expected in pairs.items():
         if getattr(d, name) != expected:
             raise AdmissionDenied(f"Human decision mismatch: {name}")
+
+
+def _validate_human_currency(s: TrustedStateSnapshot, a: AdmissionAssertions) -> TrustedHumanReview:
+    _validate_review_collection(s)
+    bound = _review(s, a.human_review_id)
+    if bound.actor != a.human_actor:
+        raise AdmissionDenied("Human actor mismatch")
+    if bound.state != "APPROVED":
+        raise AdmissionDenied("Human review not APPROVED")
+    if bound.commit_id != a.candidate_head:
+        raise AdmissionDenied("Human review commit mismatch")
+    if bound.body != a.human_review_body:
+        raise AdmissionDenied("Human review body mismatch")
+    _validate_decision(bound.decision, a)
+
+    for review in s.human_reviews:
+        if review.actor != a.human_actor or review.commit_id != a.candidate_head:
+            continue
+        if review.state == "DISMISSED":
+            continue
+        if review.state == "COMMENTED":
+            continue
+        if review.state == "APPROVED":
+            if review.body != a.human_review_body:
+                raise AdmissionDenied("conflicting active Human approval body")
+            try:
+                _validate_decision(review.decision, a)
+            except AdmissionDenied as exc:
+                raise AdmissionDenied("conflicting active Human approval decision") from exc
+            continue
+        if review.state == "CHANGES_REQUESTED":
+            raise AdmissionDenied("active Human CHANGES_REQUESTED conflicts with bound D0")
+        raise AdmissionDenied("unknown or unsupported active Human review state")
+    return bound
 
 
 def _validate_snapshot(s: TrustedStateSnapshot, a: AdmissionAssertions) -> TrustedHumanReview:
@@ -326,17 +375,7 @@ def _validate_snapshot(s: TrustedStateSnapshot, a: AdmissionAssertions) -> Trust
         if not ok:
             raise AdmissionDenied(message)
     qk_allowed_merge_methods_digest(s.allowed_merge_methods)
-    r = _review(s, a.human_review_id)
-    if r.actor != a.human_actor:
-        raise AdmissionDenied("Human actor mismatch")
-    if r.state != "APPROVED":
-        raise AdmissionDenied("Human review not APPROVED")
-    if r.commit_id != a.candidate_head:
-        raise AdmissionDenied("Human review commit mismatch")
-    if r.body != a.human_review_body:
-        raise AdmissionDenied("Human review body mismatch")
-    _validate_decision(r.decision, a)
-    return r
+    return _validate_human_currency(s, a)
 
 
 def _identity_payload(a: AdmissionAssertions) -> dict[str, Any]:
@@ -498,6 +537,7 @@ class PullRequestMergeExecutor:
                 pr=admission.pr,
                 canonical_ref=admission.canonical_ref,
             )
+            _validate_review_collection(s)
             r = _review(s, admission.human_review_id)
             a = _assertions_from_admission(admission, r.body)
             _validate_snapshot(s, a)
