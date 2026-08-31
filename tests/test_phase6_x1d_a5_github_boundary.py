@@ -128,6 +128,7 @@ def snapshot(**changes: object) -> TrustedStateSnapshot:
         ("merge",),
         (),
         False,
+        True,
     )
     return replace(value, **changes)
 
@@ -259,6 +260,75 @@ class X1DA5BoundaryTests(unittest.TestCase):
         for values in ((), (review(), review())):
             self.adapter.snapshot = snapshot(human_reviews=values)
             self.broker_denied()
+
+    def test_multiple_identical_approvals_are_concordant_and_order_independent(self) -> None:
+        reviews = (
+            review(submitted_at="2026-08-31T08:20:09Z"),
+            review(review_id="review-9002", submitted_at="2026-08-31T08:34:26Z"),
+            review(review_id="review-9003", submitted_at="2026-08-31T08:54:20Z"),
+        )
+        self.adapter.snapshot = snapshot(human_reviews=reviews)
+        first = self.admit()
+        reordered = (
+            replace(reviews[2], submitted_at="2030-01-01T00:00:00Z"),
+            replace(reviews[0], submitted_at="2040-01-01T00:00:00Z"),
+            replace(reviews[1], submitted_at="2050-01-01T00:00:00Z"),
+        )
+        self.adapter.snapshot = snapshot(human_reviews=reordered)
+        second = self.admit()
+        self.assertEqual(serialize_admission(first), serialize_admission(second))
+        self.assertEqual(self.transport.invocations, [])
+
+    def test_conflicting_same_human_same_candidate_decisions_deny(self) -> None:
+        conflicts = (
+            review(review_id="conflict-body", body="different decision body"),
+            review(review_id="conflict-d0", decision=decision(decision_id="D0-other")),
+            review(review_id="conflict-negative", state="CHANGES_REQUESTED", decision=None),
+            review(review_id="conflict-unknown", state="PENDING", decision=None),
+        )
+        for conflict in conflicts:
+            self.adapter.snapshot = snapshot(human_reviews=(review(), conflict))
+            self.broker_denied()
+
+    def test_dismissed_comment_different_actor_and_different_commit_are_not_silent_winners(self) -> None:
+        cases = (
+            review(review_id="dismissed-old", state="DISMISSED", body="old body", decision=None),
+            review(review_id="commented", state="COMMENTED", body="comment only", decision=None),
+            review(review_id="other-actor", actor="other-human", state="CHANGES_REQUESTED", decision=None),
+            review(review_id="other-commit", commit_id="6" * 40, state="CHANGES_REQUESTED", decision=None),
+        )
+        for extra in cases:
+            self.adapter.snapshot = snapshot(human_reviews=(review(), extra))
+            admission = self.admit()
+            validate_admission(admission)
+            self.assertEqual(self.transport.invocations, [])
+
+    def test_dismissed_old_conflict_allows_separately_bound_concordant_approval(self) -> None:
+        new_review_id = "review-new"
+        old = review(state="DISMISSED", body="old conflicting body", decision=None)
+        new = review(review_id=new_review_id, submitted_at="2026-08-31T09:00:00Z")
+        self.adapter.snapshot = snapshot(human_reviews=(old, new))
+        admission = self.admit(assertions(human_review_id=new_review_id))
+        self.assertEqual(admission.human_review_id, new_review_id)
+        self.assertEqual(self.transport.invocations, [])
+
+    def test_bound_dismissal_unknown_completeness_and_duplicate_identity_fail_closed(self) -> None:
+        self.adapter.snapshot = snapshot(human_reviews=(review(state="DISMISSED", decision=None),))
+        self.broker_denied()
+        for complete in (False, None):
+            self.adapter.snapshot = snapshot(human_reviews_complete=complete)
+            self.broker_denied()
+        self.adapter.snapshot = snapshot(human_reviews=(review(), review()))
+        self.broker_denied()
+
+    def test_executor_revalidates_complete_decision_set_before_transport(self) -> None:
+        admission = self.admit()
+        conflict = review(review_id="late-conflict", state="CHANGES_REQUESTED", decision=None)
+        self.adapter.snapshot = snapshot(human_reviews=(review(), conflict))
+        self.executor_denied(admission)
+        self.adapter.snapshot = snapshot(human_reviews_complete=False)
+        self.executor_denied(admission)
+        self.assertEqual(self.transport.invocations, [])
 
     def test_qk_and_bypass_mismatches_fail_closed(self) -> None:
         cases = [
