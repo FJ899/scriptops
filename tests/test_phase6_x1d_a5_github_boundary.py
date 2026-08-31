@@ -321,6 +321,40 @@ class X1DA5BoundaryTests(unittest.TestCase):
         self.adapter.snapshot = snapshot(human_reviews=(review(), review()))
         self.broker_denied()
 
+    def test_malformed_required_review_fields_fail_closed_before_filtering(self) -> None:
+        cases = (
+            review(review_id="bad-actor-empty", actor="", state="CHANGES_REQUESTED", decision=None),
+            review(review_id="bad-actor-space", actor=" other-human ", state="CHANGES_REQUESTED", decision=None),
+            review(review_id="bad-actor-type", actor=7, state="CHANGES_REQUESTED", decision=None),
+            review(review_id="bad-commit-empty", commit_id="", state="CHANGES_REQUESTED", decision=None),
+            review(review_id="bad-commit-format", commit_id="not-a-commit", state="CHANGES_REQUESTED", decision=None),
+            review(review_id="bad-commit-type", commit_id=7, state="CHANGES_REQUESTED", decision=None),
+            review(review_id="bad-state-empty", state="", decision=None),
+            review(review_id="bad-state-type", state=7, decision=None),
+            review(review_id="bad-body-empty", state="COMMENTED", body="", decision=None),
+            review(review_id="bad-body-space", state="COMMENTED", body=" comment ", decision=None),
+            review(review_id="bad-body-type", state="COMMENTED", body=7, decision=None),
+            review(review_id="bad-different-actor-shape", actor=" other-human ", commit_id=CANDIDATE_HEAD, state="CHANGES_REQUESTED", decision=None),
+            review(review_id="bad-different-commit-shape", actor=ACTOR, commit_id=("6" * 40) + " ", state="CHANGES_REQUESTED", decision=None),
+        )
+        for extra in cases:
+            with self.subTest(review_id=extra.review_id):
+                self.adapter.snapshot = snapshot(human_reviews=(review(), extra))
+                self.broker_denied()
+        self.assertEqual(self.transport.invocations, [])
+
+    def test_executor_rejects_malformed_review_identity_before_transport(self) -> None:
+        admission = self.admit()
+        cases = (
+            review(review_id="late-bad-actor", actor="", state="CHANGES_REQUESTED", decision=None),
+            review(review_id="late-bad-commit", commit_id="", state="CHANGES_REQUESTED", decision=None),
+        )
+        for extra in cases:
+            with self.subTest(review_id=extra.review_id):
+                self.adapter.snapshot = snapshot(human_reviews=(review(), extra))
+                self.executor_denied(admission)
+        self.assertEqual(self.transport.invocations, [])
+
     def test_executor_revalidates_complete_decision_set_before_transport(self) -> None:
         admission = self.admit()
         conflict = review(review_id="late-conflict", state="CHANGES_REQUESTED", decision=None)
