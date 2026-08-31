@@ -278,12 +278,22 @@ def _validate_assertions(a: AdmissionAssertions) -> None:
         raise AdmissionDenied("Q_K ruleset id mismatch")
 
 
+def _validate_review_record(review: TrustedHumanReview) -> None:
+    if not isinstance(review, TrustedHumanReview):
+        raise AdmissionDenied("Human review missing or malformed")
+    _text("Human review id", review.review_id)
+    _text("Human review actor", review.actor)
+    _text("Human review state", review.state)
+    _sha1("Human review commit id", review.commit_id)
+    _text("Human review body", review.body)
+
+
 def _validate_review_collection(snapshot: TrustedStateSnapshot) -> None:
     if snapshot.human_reviews_complete is not True:
         raise AdmissionDenied("Human review collection incomplete or ambiguous")
     seen: set[str] = set()
     for review in snapshot.human_reviews:
-        _text("Human review id", review.review_id)
+        _validate_review_record(review)
         if review.review_id in seen:
             raise AdmissionDenied("duplicate Human review identity")
         seen.add(review.review_id)
