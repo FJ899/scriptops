@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
-"""Phase-6 hardening shim for the canonical ScriptOps v2 prototype.
+"""Phase-6 controlled ScriptOps shim with X1B Human-decision authorship V2.
 
-This is deliberately not a rewrite and does not add AI/model capability.
-It loads ``legacy/scriptops-v2-single.py`` as the execution substrate and
-closes only the five accepted Phase-6 blockers:
-
-B1 durable task checkpoint before preflight;
-B2 clean Git lifecycle for generated evidence/candidate input;
-B3 accepted scene hash recalculated after status transition;
-B4 mandatory human approval rationale;
-B5 persisted impact report + deterministic smokeable path.
+The pre-approval workflow remains the bounded Phase-6 mechanism. Canonical scene
+acceptance is now possible only through ``x1b_human_decision.approve_scene`` and
+an exact trusted GitHub Human review. ``--why`` is proposal text, never authority,
+and is no longer an approval credential.
 """
 from __future__ import annotations
 
@@ -26,6 +21,10 @@ from types import ModuleType
 
 SOURCE_ROOT = Path(__file__).resolve().parents[1]
 LEGACY_PATH = SOURCE_ROOT / "legacy" / "scriptops-v2-single.py"
+PHASE6_DIR = Path(__file__).resolve().parent
+if str(PHASE6_DIR) not in sys.path:
+    sys.path.insert(0, str(PHASE6_DIR))
+import x1b_human_decision as x1b
 
 
 def _load_legacy() -> ModuleType:
@@ -101,7 +100,6 @@ def _task_pack(task_id: str) -> dict:
 
 
 def _wait_for_unused_review_slot() -> None:
-    """Avoid legacy second-resolution TASK ids reusing an existing task directory."""
     deadline = time.monotonic() + 2.5
     while True:
         task_id = f"TASK-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
@@ -113,7 +111,6 @@ def _wait_for_unused_review_slot() -> None:
 
 
 def cmd_review(args: argparse.Namespace) -> None:
-    """B1: the task becomes a durable checkpoint before preflight."""
     _require_clean("review pre-state")
     before_packs = {
         path.resolve()
@@ -137,7 +134,6 @@ def cmd_review(args: argparse.Namespace) -> None:
 
 
 def cmd_check_pre(args: argparse.Namespace) -> None:
-    """B2: generated preflight evidence is committed immediately."""
     _require_clean("check-pre pre-state")
     legacy.cmd_check_pre(args)
     task_dir = ROOT / "tasks" / args.task
@@ -151,7 +147,6 @@ def cmd_check_pre(args: argparse.Namespace) -> None:
 
 
 def cmd_context_build(args: argparse.Namespace) -> None:
-    """B2: context pack is an immutable Git checkpoint, not hidden dirt."""
     _require_clean("context-build pre-state")
     legacy.cmd_context_build(args)
     pack = ROOT / "tasks" / args.task / "context-pack.md"
@@ -208,7 +203,7 @@ def _write_impact_report(task_id: str, source: Path) -> Path:
         raise Phase6Error("post-validation report missing")
     fm, _ = legacy.parse_front_matter(candidate)
     impact = {
-        "schema_version": "scriptops-phase6-impact/0.1",
+        "schema_version": "scriptops-phase6-impact/0.2-x1b",
         "task_id": task_id,
         "scene_id": scene_id,
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -231,10 +226,11 @@ def _write_impact_report(task_id: str, source: Path) -> Path:
         },
         "impact": [
             "candidate is staged as a proposal artifact",
-            "canonical scene remains unchanged until explicit human approve --why",
-            "approval will create/update only the canonical scene and decision log",
+            "canonical scene remains unchanged until a separate trusted X1B Human review is verified",
+            "successful X1B V2 approval changes exactly the canonical scene and .scriptops/decision-log.ndjson",
         ],
         "requires_human_decision": True,
+        "human_authority_route": "X1B-HUMAN-DECISION-V2 GitHub pull-request review",
     }
     path = ROOT / "tasks" / task_id / "impact-report.json"
     path.write_text(json.dumps(impact, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -242,8 +238,40 @@ def _write_impact_report(task_id: str, source: Path) -> Path:
     return path
 
 
+def _impact_for_candidate(scene_id: str, candidate: Path) -> tuple[Path, dict]:
+    """Return the one exact committed REVIEW_REQUIRED report for a candidate.
+
+    This is a pre-approval compatibility API used by bounded-proposal-view. It
+    does not create Human authority and it never writes accepted state.
+    """
+    candidate = candidate.resolve()
+    expected_rel = str(candidate.relative_to(ROOT.resolve()))
+    expected_sha = legacy.compute_sha256(candidate.read_text(encoding="utf-8"))
+    matches: list[tuple[Path, dict]] = []
+    for path in (ROOT / "tasks").glob("*/impact-report.json"):
+        if not path.is_file() or path.is_symlink():
+            continue
+        try:
+            value = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(value, dict) or value.get("status") != "REVIEW_REQUIRED":
+            continue
+        if value.get("scene_id") != scene_id:
+            continue
+        record = value.get("candidate")
+        if not isinstance(record, dict):
+            continue
+        if record.get("path") == expected_rel and record.get("file_sha256") == expected_sha:
+            matches.append((path, value))
+    if len(matches) != 1:
+        raise Phase6Error(
+            f"expected exactly one REVIEW_REQUIRED impact report for {expected_rel}, found {len(matches)}"
+        )
+    return matches[0]
+
+
 def cmd_check_post(args: argparse.Namespace) -> None:
-    """B2+B5: checkpoint candidate input, validate/stage, then persist impact."""
     source_name = args.source or "webai-output.md"
     source = _checkpoint_candidate_input(args.task, source_name)
     _require_clean("check-post pre-state")
@@ -253,75 +281,23 @@ def cmd_check_post(args: argparse.Namespace) -> None:
     print(f"[PHASE6] Impact report committed: {impact}")
 
 
-def _impact_for_candidate(scene_id: str, candidate: Path) -> tuple[Path, dict]:
-    candidate_sha = legacy.compute_sha256(candidate.read_text(encoding="utf-8"))
-    matches: list[tuple[Path, dict]] = []
-    for path in (ROOT / "tasks").glob("*/impact-report.json"):
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-        if (
-            data.get("scene_id") == scene_id
-            and data.get("candidate", {}).get("file_sha256") == candidate_sha
-            and data.get("status") == "REVIEW_REQUIRED"
-        ):
-            matches.append((path, data))
-    if not matches:
-        raise Phase6Error("no exact REVIEW_REQUIRED impact report for candidate")
-    return sorted(matches, key=lambda item: str(item[0]))[-1]
-
-
 def cmd_approve(args: argparse.Namespace) -> None:
-    """B3+B4: human rationale precedes canonical write; accepted hash is fresh."""
-    _require_clean("approve pre-state")
-    why = args.why.strip()
-    if not why:
-        raise Phase6Error("approve --why must be non-empty")
-
-    scene_id = args.scene
-    candidate = _latest_candidate(scene_id)
-    impact_path, impact = _impact_for_candidate(scene_id, candidate)
-    fm, body = legacy.parse_front_matter(candidate)
-    if fm.get("status") != "candidate":
-        raise Phase6Error("only candidate status can be approved")
-
-    # The proposal artifact already exists, but the canonical effect does not.
-    # Human approval happens before writing the canonical target.
-    fm["status"] = "accepted"
-    target = ROOT / "scenes" / f"{scene_id}.fountain"
-    accepted_scene_hash = legacy.write_scene_file(target, fm, body)
-    accepted_text = target.read_text(encoding="utf-8")
-
-    decision = {
-        "id": f"DEC-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "scope": [scene_id],
-        "status": "active",
-        "type": "scene_accepted",
-        "approver": "human",
-        "why": why,
-        "task_id": impact.get("task_id"),
-        "impact_report": str(impact_path.relative_to(ROOT)),
-        "candidate_file_sha256": impact["candidate"]["file_sha256"],
-        "scene_hash": accepted_scene_hash,
-        "artifact_hash": legacy.compute_sha256(accepted_text),
-        "scene_version": fm.get("version", 1),
-    }
-    log_path = legacy.SCRIPTOPS_DIR / "decision-log.ndjson"
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-    with log_path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(decision, ensure_ascii=False) + "\n")
-
-    _commit_paths(f"scriptops phase6: accept {scene_id}", [target, log_path])
-    print(f"Accepted: {target}")
-    print(f"[PHASE6] accepted scene hash: {accepted_scene_hash}")
-    print("[PHASE6] evidence: canonical effect committed after explicit human rationale")
+    """Canonical approval only from X1BOperationAdmissionV2."""
+    try:
+        result = x1b.approve_scene(args.scene, args.decision_pr, root=ROOT)
+    except x1b.RecoveryRequired as exc:
+        raise Phase6Error(str(exc)) from exc
+    except x1b.X1BError as exc:
+        raise Phase6Error(f"X1B DENY: {exc}") from exc
+    print(f"Accepted: {ROOT / 'scenes' / (args.scene + '.fountain')}")
+    print(f"[X1B] HumanDecision=TRUE request={result['request_sha256']}")
+    print(f"[X1B] canonical commit={result['commit']}")
+    print(f"[X1B] admission={result['admission_id']}")
 
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="ScriptOps v2 Phase-6 hardening shim (reuse, no rewrite)"
+        description="ScriptOps v2 Phase-6 controlled workflow with X1B V2 Human authority"
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -344,7 +320,7 @@ def _parser() -> argparse.ArgumentParser:
 
     approve = sub.add_parser("approve")
     approve.add_argument("--scene", required=True)
-    approve.add_argument("--why", required=True)
+    approve.add_argument("--decision-pr", required=True, type=int)
     return parser
 
 

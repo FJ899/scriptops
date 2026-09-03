@@ -2,110 +2,103 @@
 
 Repozytorium lokalnego stanu projektu **Narzędzie pisarskie / ScriptOps**.
 
-## Status
+## Current security route
 
-`PHASE 6 CONTROLLED WORKFLOW MECHANISM PASS / BOUNDED PROPOSAL VIEW INTEGRATED / P3 RUN003 OBSERVED PASS / SCN-012+027 HUMAN SEMANTIC ACCEPTED / CANONICAL EFFECT PREPARED NOT APPLIED / GOAL DONE NO / NO MATURITY CLAIM`
+`X1B Human Decision Authorship V2` is the active acceptance mechanism in this implementation candidate.
 
-Current work-state:
+The old rule that a non-empty `--why` could be treated as Human approval is retired. **--why is not Human authority**. Proposal rationale may still exist as proposer/process text, but it cannot establish Human authorship.
 
-```text
-CANONICAL_EFFECT_PREPARED / WAITING_FOR_SEPARATE_HUMAN_EFFECT_GATE
-```
-
-Jawna decyzja użytkownika: `legacy/scriptops-v2-single.py` jest bazą historycznego Phase 6. `REWRITE: NO`. `NEW CAPABILITY: NO` dla tego zamrożonego baseline.
-
-## Uruchomienie nowej sesji
-
-Nowe AI ma przeczytać w tej kolejności:
-
-1. `README.md`
-2. `PROJECT_STATE.md`
-3. `HANDOFF.md`
-4. `DECISION_LOG.md`
-5. `evidence/P3_SCENE12_27_HUMAN_SEMANTIC_ACCEPTANCE_AND_CANONICAL_EFFECT_PREVIEW_2026-08-21.md`
-6. `evidence/P3_REAL_WORKLOAD_003_SCENE12_27_2026-08-19.md`
-7. `evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md`
-8. `IDEA_ARCHIVE.md`
-9. `SOURCE_MANIFEST.md`
-10. `RECONSTRUCTION_REPORT.md`
-
-`CODEX_START.md` oraz `analysis/RC1_V2_GAP_2026-08-10.md` pozostają historycznym RC1/planning provenance. **Nie są current implementation route.**
-
-## Zasady nadrzędne
-
-- odpowiedź AI jest kandydatem, nie prawdą projektu;
-- zmiana kanonu wymaga walidacji, decyzji człowieka, uzasadnienia i zapisu w Git;
-- candidate artifact nie jest kanonicznym efektem;
-- kanoniczny zapis Phase 6 następuje dopiero po `approve --why`;
-- smoke proof nie jest maturity claim;
-- nie wolno rozszerzać zakresu o nowe capability bez nowej jawnej Human decision;
-- pełne rozmowy i dane prywatne pozostają poza aktywnym drzewem.
-
-## Phase 6 — reuse + hardening + proof
-
-Wybrana historyczna baza:
+Canonical scene acceptance is invoked only as:
 
 ```text
-legacy/scriptops-v2-single.py
+approve --scene <SCN-ID> --decision-pr <PR-NUMBER>
 ```
 
-Historyczny plik pozostaje niezmieniony. Ograniczony hardening:
+and follows this boundary:
 
 ```text
-phase6/scriptops-v2-hardening.py
+proposal/candidate
+-> exact HumanDecisionRequestV2 + exact accepted-scene presentation in FJ899/8
+-> APPROVED GitHub review by durable Human user ID 226907434
+-> isolated credential-free GitHubDecisionReaderV2
+-> X1BOperationAdmissionV2
+-> prospective two-path Git commit
+-> atomic refs/heads/main old->new compare-and-swap
+-> worktree/index synchronization and post-effect verification
+-> HumanDecision=TRUE only after post-effect verification
 ```
 
-zamknął B1–B5:
+`AI PROPOSES != HUMAN DECIDES` remains normative.
 
-1. task clean-tree checkpoint;
-2. generated evidence/candidate-input lifecycle;
-3. fresh accepted hash;
-4. mandatory human `why`;
-5. impact report + deterministic smoke proof.
+## Human authority
 
-Evidence:
+The authority selector is GitHub numeric user ID `226907434`, not a mutable login string. The exact Human review body is bound to the request digest and the immutable `review.commit_id`. Comments, labels, reactions, `Continue`, caller identity, proposal rationale and Human-looking AI text are not decision evidence.
+
+The GitHub authority reader runs in a dedicated isolated Python child with a fresh environment, direct verified TLS to `api.github.com:443`, no Authorization header, no proxy input and no caller-selected CA bundle. The parent independently revalidates all returned evidence.
+
+## Canonical effect
+
+A successful X1B acceptance changes exactly:
 
 ```text
-evidence/PHASE6_CONTROLLED_WORKFLOW_PROOF_2026-08-10.md
+.scriptops/decision-log.ndjson
+scenes/<SCN-ID>.fountain
 ```
 
-Późniejszy `bounded proposal view` został zintegrowany i Real Workload 003 ustanowił bounded cross-scene proposal coherence bez canonical effect.
+The executor constructs and verifies a prospective commit first. `refs/heads/main` advances only through an old-value compare-and-swap. Git author/committer identity is `ScriptOps X1B Executor <scriptops-x1b@example.invalid>`, never the Human.
 
-2026-08-21 Human jawnie ograniczył zamierzony zakres decyzji do `SCN-012 → SCN-027`, zaakceptował proposal state obu scen i uznał bounded no-carrier goal za semantycznie spełniony. Autoryzowane zostało wyłącznie przygotowanie exact canonical effect; wykonanie pozostaje za osobnym Human effect gate (`DEC-SO-011`).
+A durable X1B record derives Human attribution from the verified review and carries the request/review/admission chain. Generic `approver="human"` is forbidden.
 
-## Testy
+## Active files
+
+```text
+phase6/scriptops-v2-hardening.py   Phase-6 pre-approval workflow + X1B approve CLI
+phase6/x1b_human_decision.py       Human authority, admission, anchored Git and CAS executor
+legacy/scriptops-v2-single.py      safe compatibility shim; legacy accepted-state routes disabled
+scripts/verify_repository.py       active/historical consistency verification
+scripts/restore_v2.py              historical reconstruction only; cannot overwrite active legacy shim
+```
+
+## Historical prototype
+
+The original 2026-08 single-file prototype is preserved only as historical reconstruction material in:
+
+```text
+sources/prototype/scriptops-v2-single.py.part01 ... part07
+```
+
+It is not the active approval executable. `scripts/restore_v2.py` deliberately refuses to restore those historical bytes over `legacy/scriptops-v2-single.py`.
+
+Historical Phase-6/P3 evidence remains provenance and is not relabeled as X1B closure.
+
+## Tests
 
 ```bash
-python -m unittest discover -s tests -p 'test_phase6_*.py' -v
+python -m unittest -v tests.test_x1b_human_decision tests.test_phase6_scriptops_smoke
 python scripts/verify_repository.py
+python scripts/restore_v2.py --check-only
 ```
 
-PR #7 został zweryfikowany i scalony. Jego merge commit pozostaje historycznym checkpointem Phase 6: `daa6e5dc210e09171a530eeffe5601e0e74ae041`.
-
-Późniejsze integrated checkpoints są opisane w `PROJECT_STATE.md`; zapisane SHA są provenance/checkpoints, nie perpetual live locks.
-
-## Downstream Saddle context — accepted external fact
-
-Historyczny następny gate `SADDLE LIVE MODEL EVIDENCE NEXT` został później zamknięty w repo Saddle. `FUNCTIONAL_SADDLE_ACCEPTED` jest zaakceptowanym faktem Saddle i **nie** podnosi automatycznie maturity ScriptOps.
-
-ScriptOps nadal ma tylko własny udowodniony zakres i `MATURITY CLAIM: NONE`.
-
-## Zakaz rozbudowy
-
-Nie dodawać browser helpera, direct model/API automation, autonomous approval, atomic multi-scene approval, agent framework, multi-agent, GUI/dashboard, vector DB, semantic graph ani multi-user bez osobnej Human authority.
-
-## Co dalej
-
-Historyczny `materially-different bounded workload` został wykonany przez Real Workloads 001–003. **Nie jest już current NEXT.**
-
-Human semantic decision dla `SCN-012 + SCN-027` również jest zamknięta. Current state:
+CI entrypoint:
 
 ```text
-CANONICAL_EFFECT_PREPARED / WAITING_FOR_SEPARATE_HUMAN_EFFECT_GATE
+.github/workflows/x1b-human-decision.yml
 ```
 
-Nie szukać dalszego downstream material dla tej decyzji i nie wracać do semantic review SCN-012/027.
+## Governance state
 
-Przed jakimkolwiek canonical effect trzeba przedstawić Human exact target project/canonical scene identities, exact accepted source/candidate identities zgodne z `DEC-SO-011`, exact `why` oraz potwierdzenie braku unrelated canonical changes. Dopiero osobny Human gate może autoryzować `approve --why` / canonical write.
+This branch is an **X1B implementation candidate**, not corrective closure. It authorizes no live Human decision-evidence PR, real positive control, canonical screenplay effect, merge, release, deployment, Agency Kernel V1 or maturity claim.
 
-`MATURITY CLAIM`: **NONE**.
+The legal sequence remains:
+
+```text
+implementation candidate
+-> independent implementation review
+-> preregistered corrective-verification packet
+-> separate Human execution authorization
+-> negative matrix + real Human positive control
+-> independent closure review
+-> Human closure acceptance
+```
+
+Only the final Human closure acceptance can close X1B.
