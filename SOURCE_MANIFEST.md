@@ -1,80 +1,56 @@
-# SOURCE_MANIFEST
+# SOURCE MANIFEST — ScriptOps
 
-Repo zawiera minimalny pakiet potrzebny do wznowienia i kontynuacji pracy bez dostępu do wcześniejszego czatu.
-
-## Kanoniczne źródła operacyjne
-
-- `README.md` — kolejność uruchomienia nowej sesji;
-- `PROJECT_STATE.md` — aktualny stan projektu;
-- `HANDOFF.md` — punkt wznowienia i `ACCESS CHECK` wraz z maszynowym nagłówkiem;
-- `DECISION_LOG.md` — wyłącznie decyzje semantyczne;
-- `IDEA_ARCHIVE.md` — zachowane pomysły i warunki powrotu;
-- `CODEX_START.md` — niezależny prompt etapu planowania RC1;
-- `RECONSTRUCTION_REPORT.md` — zrekonstruowana historia, dowody i miejsce zatrzymania;
-- `SOURCE_AUDIT_SUMMARY.md` — podsumowanie pełnej inwentaryzacji 2016 rekordów;
-- `continuity/COLD_START_AUDIT-001.md` — niezależny test wznowienia bez pamięci rozmowy.
-
-## Zachowane źródła produktowe
-
-- `sources/Decision_Summary_Current_State.md` — aktualne podsumowanie decyzji produktu;
-- `sources/ScriptOps_Main_Theme_Summary.md` — główna definicja i prawo produktu;
-- `sources/RC1_SCOPE_LOCK.md` — obowiązująca blokada zakresu RC1;
-- `legacy/scriptops-v2-single.py` — pojedyncza kanoniczna kopia historycznego prototypu v2;
-- `sources/prototype/` — siedem części transportowych, instrukcja awaryjnego odtworzenia i dowód odtwarzalności.
-
-Historyczne ścieżki z `ScriptOps_FINAL_MASTER_PACKAGE` są informacją o pochodzeniu. Aktywne, odczytywalne kopie wymagane do wznowienia znajdują się pod ścieżkami wymienionymi wyżej.
-
-## Integralność prototypu
-
-Kanoniczny plik:
+## Active runtime / governance-relevant sources
 
 ```text
+phase6/scriptops-v2-hardening.py
+phase6/x1b_human_decision.py
 legacy/scriptops-v2-single.py
-SHA-256: 881dade6c6c506b9a9d41ebfbf68afb18b66db7583d35f746fb29ed7b36ac596
-Rozmiar: 51980 B
+scripts/restore_v2.py
+scripts/verify_repository.py
+tests/test_phase6_scriptops_smoke.py
+tests/test_x1b_human_decision.py
+.github/workflows/x1b-human-decision.yml
+README.md
+PROJECT_STATE.md
+HANDOFF.md
 ```
 
-Kontrola:
+`phase6/x1b_human_decision.py` is the active `X1B Human Decision Authorship V2` authority/admission/effect boundary.
 
-```bash
-python scripts/verify_repository.py
+`legacy/scriptops-v2-single.py` is now an active **safe compatibility shim** for pre-approval ScriptOps commands. It is intentionally not byte-identical to the historical prototype and cannot create `accepted` state.
+
+## Historical prototype
+
+The original full ScriptOps v2 single-file prototype is a **historical prototype** preserved by transport parts:
+
+```text
+sources/prototype/scriptops-v2-single.py.part01
+sources/prototype/scriptops-v2-single.py.part02
+sources/prototype/scriptops-v2-single.py.part03
+sources/prototype/scriptops-v2-single.py.part04
+sources/prototype/scriptops-v2-single.py.part05
+sources/prototype/scriptops-v2-single.py.part06
+sources/prototype/scriptops-v2-single.py.part07
 ```
 
-Awaryjne odtworzenie kanonicznego pliku z części transportowych:
+Historical identity:
 
-```bash
-python scripts/restore_v2.py --force
+```text
+SHA-256 = 881dade6c6c506b9a9d41ebfbf68afb18b66db7583d35f746fb29ed7b36ac596
+SIZE = 51980 bytes
 ```
 
-Instrukcja alternatywna: `sources/prototype/RESTORE.md`.
+These parts are evidence/reconstruction material only. `scripts/restore_v2.py` may reconstruct them to a non-active output path but must refuse any output that would overwrite `legacy/scriptops-v2-single.py`.
 
-## Pochodzenie
+## Historical evidence retained
 
-Rekonstrukcja została wykonana na podstawie minimalnego pakietu READ_ONLY obejmującego:
+Existing Phase-6, P3, continuity and reconstruction evidence remains historical provenance. It does not establish X1B closure and must not reactivate the old `approve --why` Human-attribution semantics.
 
-- ScriptOps Final Master Package;
-- szeroką specyfikację v5;
-- prototyp v2;
-- materiały Mądrego Warsztatu / S2 Studio;
-- decyzje B4, B5 i Aneks;
-- dwa audyty przejścia;
-- pełny indeks 2016 logicznych rekordów i 702 plików fizycznych.
+## Active Human approval route
 
-Repo przechowuje wszystkie informacje wymagane do poprawnego wznowienia: stan, decyzje, zakres, dowody, pomysły, punkt zatrzymania, plan następnego kroku oraz kod prototypu.
+```text
+approve --scene <SCN-ID> --decision-pr <PR-NUMBER>
+```
 
-## Granica kompletności
-
-Zabezpieczono:
-
-- tożsamość i historię projektu;
-- najpóźniejszy udokumentowany zakres produktu;
-- zakres i wykluczenia RC1;
-- instrukcję rozpoczęcia pracy z Codex;
-- wcześniejszy kod;
-- kluczowe decyzje użytkownika;
-- pomysły post-MVP z warunkami powrotu;
-- dowody działania poprzednich procesów;
-- główne sprzeczności i braki źródłowe;
-- wynik niezależnego testu ciągłości.
-
-Nie istnieje dostępny dowód późniejszej implementacji lub odpowiedzi Codex powstałej po Final Master Package. Ta niewiedza nie została ukryta; pozostaje aktywną blokadą `ACCESS CHECK REQUIRED`.
+Authority derives from the exact verified X1B V2 GitHub Human review and never from `--why`, caller identity or the historical prototype.

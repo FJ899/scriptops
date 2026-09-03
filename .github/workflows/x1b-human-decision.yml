@@ -1,0 +1,455 @@
+name: x1b-human-decision
+
+on:
+  push:
+    paths:
+      - 'phase6/x1b_human_decision.py'
+      - 'phase6/scriptops-v2-hardening.py'
+      - 'legacy/scriptops-v2-single.py'
+      - 'scripts/restore_v2.py'
+      - 'scripts/verify_repository.py'
+      - 'tests/test_x1b_human_decision.py'
+      - 'tests/test_phase6_scriptops_smoke.py'
+      - '.github/workflows/x1b-human-decision.yml'
+      - 'README.md'
+      - 'PROJECT_STATE.md'
+      - 'HANDOFF.md'
+      - 'SOURCE_MANIFEST.md'
+      - 'sources/prototype/RESTORE.md'
+  pull_request:
+    paths:
+      - 'phase6/x1b_human_decision.py'
+      - 'phase6/scriptops-v2-hardening.py'
+      - 'legacy/scriptops-v2-single.py'
+      - 'scripts/restore_v2.py'
+      - 'scripts/verify_repository.py'
+      - 'tests/test_x1b_human_decision.py'
+      - 'tests/test_phase6_scriptops_smoke.py'
+      - '.github/workflows/x1b-human-decision.yml'
+      - 'README.md'
+      - 'PROJECT_STATE.md'
+      - 'HANDOFF.md'
+      - 'SOURCE_MANIFEST.md'
+      - 'sources/prototype/RESTORE.md'
+
+permissions:
+  contents: read
+
+jobs:
+  x1b-v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install active ScriptOps dependency
+        run: python -m pip install --disable-pip-version-check pyyaml
+      - name: X1B retained parent credential/proxy fail-closed regression
+        run: |
+          PYTHONPATH=phase6 python - <<'PY'
+          import contextlib
+          import os
+          from unittest import mock
+          import x1b_human_decision as x1b
+
+          hostile = {
+              "GITHUB_TOKEN": "attacker-token",
+              "GH_TOKEN": "attacker-token",
+              "GITHUB_ENTERPRISE_TOKEN": "attacker-token",
+              "GH_ENTERPRISE_TOKEN": "attacker-token",
+              "HTTP_PROXY": "http://attacker.invalid:8080",
+              "HTTPS_PROXY": "http://attacker.invalid:8080",
+              "ALL_PROXY": "socks5://attacker.invalid:1080",
+              "http_proxy": "http://attacker.invalid:8080",
+              "https_proxy": "http://attacker.invalid:8080",
+              "all_proxy": "socks5://attacker.invalid:1080",
+          }
+          original = os.environ.copy()
+          try:
+              for key, value in hostile.items():
+                  os.environ.clear()
+                  os.environ.update(original)
+                  os.environ[key] = value
+                  with (
+                      mock.patch.object(x1b.AnchoredGitV2, "discover", return_value=object()),
+                      mock.patch.object(x1b, "x1b_lock", return_value=contextlib.nullcontext()),
+                      mock.patch.object(x1b, "local_preflight", return_value=object()),
+                      mock.patch.object(
+                          x1b,
+                          "run_network_child",
+                          side_effect=AssertionError(
+                              f"authority child was reached while forbidden parent env {key} was set"
+                          ),
+                      ),
+                  ):
+                      try:
+                          x1b.approve_scene("SCN-001", 1)
+                      except x1b.X1BError:
+                          pass
+                      else:
+                          raise AssertionError(f"{key} did not fail closed")
+          finally:
+              os.environ.clear()
+              os.environ.update(original)
+          print("X1B retained parent credential/proxy environment = DENY")
+          PY
+      - name: X1B CAS1 and GIT1-GIT6 fuse
+        run: |
+          python - <<'PY'
+          import os
+          from tests.test_x1b_human_decision import X1BTests
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path("phase6").resolve()))
+          import x1b_human_decision as x1b
+
+          case = X1BTests()
+          case.setUp()
+          try:
+              with x1b.x1b_lock(case.git):
+                  try:
+                      with x1b.x1b_lock(case.git):
+                          raise AssertionError("second common-dir X1B lock unexpectedly acquired")
+                  except x1b.X1BError as exc:
+                      assert "BLOCKED_CONCURRENT_X1B" in str(exc)
+
+              hostile = {
+                  "GIT_DIR": "/tmp/attacker-git-dir",
+                  "GIT_WORK_TREE": "/tmp/attacker-worktree",
+                  "GIT_COMMON_DIR": "/tmp/attacker-common",
+                  "GIT_INDEX_FILE": "/tmp/attacker-index",
+                  "GIT_OBJECT_DIRECTORY": "/tmp/attacker-objects",
+                  "GIT_ALTERNATE_OBJECT_DIRECTORIES": "/tmp/attacker-alt-objects",
+                  "GIT_NAMESPACE": "attacker",
+                  "GIT_CONFIG_COUNT": "1",
+                  "GIT_CONFIG_KEY_0": "core.repositoryformatversion",
+                  "GIT_CONFIG_VALUE_0": "999",
+                  "GIT_CONFIG_GLOBAL": "/tmp/attacker-global-config",
+                  "GIT_CONFIG_SYSTEM": "/tmp/attacker-system-config",
+                  "GIT_NO_REPLACE_OBJECTS": "0",
+              }
+              original = os.environ.copy()
+              try:
+                  os.environ.update(hostile)
+                  anchored = x1b.AnchoredGitV2.discover(case.root)
+                  assert anchored.root == case.root.resolve()
+                  assert anchored.git_dir == case.git.git_dir
+                  assert anchored.common_dir == case.git.common_dir
+                  assert anchored.require_direct_main(case.local.base_head) == case.local.base_head
+                  assert anchored.text("rev-parse", "--show-toplevel") == str(case.root.resolve())
+              finally:
+                  os.environ.clear()
+                  os.environ.update(original)
+          finally:
+              case.tearDown()
+          print("X1B-CAS1 + X1B-GIT1..GIT6 fuse = PASS")
+          PY
+      - name: X1B CAS3-CAS5 mode and machine-metadata fuse
+        run: |
+          python - <<'PY'
+          import os
+          import tempfile
+          from pathlib import Path
+          from tests.test_x1b_human_decision import X1BTests
+          import sys
+          sys.path.insert(0, str(Path("phase6").resolve()))
+          import x1b_human_decision as x1b
+
+          case = X1BTests()
+          case.setUp()
+          try:
+              admission, request = case.admission()
+              base = case.local.base_head
+              valid, new_log, _ = x1b._prospective_commit(case.git, case.local, admission, request)
+              valid_tree = case.git.text("rev-parse", f"{valid}^{{tree}}")
+              machine_env = {
+                  "GIT_AUTHOR_NAME": x1b.MACHINE_NAME,
+                  "GIT_AUTHOR_EMAIL": x1b.MACHINE_EMAIL,
+                  "GIT_COMMITTER_NAME": x1b.MACHINE_NAME,
+                  "GIT_COMMITTER_EMAIL": x1b.MACHINE_EMAIL,
+              }
+
+              wrong_parent = case.git.text(
+                  "commit-tree", valid_tree, "-F", "-",
+                  input_bytes=b"wrong parent\n", env_extra=machine_env,
+              )
+              try:
+                  x1b._verify_prospective(case.git, base, wrong_parent, case.local, new_log)
+              except x1b.X1BError as exc:
+                  assert "parent mismatch" in str(exc)
+              else:
+                  raise AssertionError("CAS3 wrong parent accepted")
+
+              def mutated_commit(*, extra_path=False, bad_scene=False, bad_mode=False, machine=True):
+                  fd, name = tempfile.mkstemp(prefix="x1b-r3-fuse-", dir=case.git.common_dir)
+                  os.close(fd)
+                  index = Path(name)
+                  index.unlink(missing_ok=True)
+                  try:
+                      case.git.run("read-tree", valid, index_file=index)
+                      if extra_path:
+                          oid = case.git.text("hash-object", "-w", "--stdin", input_bytes=b"extra\n")
+                          case.git.run("update-index", "--add", "--cacheinfo", f"100644,{oid},EXTRA.txt", index_file=index)
+                      if bad_scene:
+                          oid = case.git.text("hash-object", "-w", "--stdin", input_bytes=b"tampered scene\n")
+                          case.git.run("update-index", "--add", "--cacheinfo", f"100644,{oid},{case.local.accepted_scene_path}", index_file=index)
+                      if bad_mode:
+                          _, oid = case.git.tree_entry(valid, case.local.accepted_scene_path)
+                          case.git.run("update-index", "--add", "--cacheinfo", f"100755,{oid},{case.local.accepted_scene_path}", index_file=index)
+                      tree = case.git.text("write-tree", index_file=index)
+                      env = machine_env if machine else {
+                          "GIT_AUTHOR_NAME": "Human Looking Actor",
+                          "GIT_AUTHOR_EMAIL": "human@example.invalid",
+                          "GIT_COMMITTER_NAME": "Human Looking Actor",
+                          "GIT_COMMITTER_EMAIL": "human@example.invalid",
+                      }
+                      return case.git.text(
+                          "commit-tree", tree, "-p", base, "-F", "-",
+                          input_bytes=b"mutated\n", env_extra=env,
+                      )
+                  finally:
+                      index.unlink(missing_ok=True)
+
+              checks = [
+                  (mutated_commit(extra_path=True), "changed paths", "CAS4 extra path"),
+                  (mutated_commit(bad_scene=True), "scene bytes", "CAS5 scene bytes"),
+                  (mutated_commit(bad_mode=True), "file mode", "wrong file mode"),
+                  (mutated_commit(machine=False), "author identity", "machine metadata"),
+              ]
+              for commit, message, label in checks:
+                  try:
+                      x1b._verify_prospective(case.git, base, commit, case.local, new_log)
+                  except x1b.X1BError as exc:
+                      assert message in str(exc), (label, str(exc))
+                  else:
+                      raise AssertionError(f"{label} accepted")
+          finally:
+              case.tearDown()
+          print("X1B-CAS3..5 + mode + machine metadata fuse = PASS")
+          PY
+      - name: X1B CAS7-CAS8 failure-truth fuse
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from unittest import mock
+          from tests.test_x1b_human_decision import X1BTests
+          import sys
+          sys.path.insert(0, str(Path("phase6").resolve()))
+          import x1b_human_decision as x1b
+
+          case = X1BTests()
+          case.setUp()
+          try:
+              admission, request = case.admission()
+              base = case.local.base_head
+              before_tree = case.git.text("write-tree")
+              before_scene = (case.root / case.local.accepted_scene_path).read_bytes()
+              with mock.patch.object(x1b, "_prospective_commit", side_effect=x1b.X1BError("injected pre-CAS failure")):
+                  try:
+                      x1b.execute_admission(case.git, case.local, admission, request)
+                  except x1b.X1BError as exc:
+                      assert "injected pre-CAS failure" in str(exc)
+                  else:
+                      raise AssertionError("CAS7 injected pre-CAS failure returned success")
+              assert case.git.require_direct_main(base) == base
+              assert case.git.text("write-tree") == before_tree
+              assert (case.root / case.local.accepted_scene_path).read_bytes() == before_scene
+              assert not (case.root / ".scriptops" / "decision-log.ndjson").exists()
+              case.git.require_clean()
+          finally:
+              case.tearDown()
+
+          case = X1BTests()
+          case.setUp()
+          try:
+              admission, request = case.admission()
+              base = case.local.base_head
+              before_scene = (case.root / case.local.accepted_scene_path).read_bytes()
+              original_run = x1b.AnchoredGitV2.run
+
+              def fail_real_read_tree(self, *args, **kwargs):
+                  if args and args[0] == "read-tree" and kwargs.get("index_file") is None:
+                      raise x1b.X1BError("injected post-CAS sync failure")
+                  return original_run(self, *args, **kwargs)
+
+              with mock.patch.object(x1b.AnchoredGitV2, "run", new=fail_real_read_tree):
+                  try:
+                      x1b.execute_admission(case.git, case.local, admission, request)
+                  except x1b.RecoveryRequired as exc:
+                      assert "RECOVERY_REQUIRED after CAS" in str(exc)
+                  else:
+                      raise AssertionError("CAS8 post-CAS failure returned success")
+              assert case.git.require_direct_main() != base
+              assert (case.root / case.local.accepted_scene_path).read_bytes() == before_scene
+              assert not (case.root / ".scriptops" / "decision-log.ndjson").exists()
+          finally:
+              case.tearDown()
+          print("X1B-CAS7..8 failure truth fuse = PASS")
+          PY
+      - name: X1B CUR2 CUR12 TLS1-TLS15 deterministic child fuse
+        run: |
+          python - <<'PY'
+          import base64
+          import inspect
+          import io
+          import json
+          import os
+          import subprocess
+          import sys
+          from pathlib import Path
+          from unittest import mock
+          from tests.test_x1b_human_decision import X1BTests
+          sys.path.insert(0, str(Path("phase6").resolve()))
+          import x1b_human_decision as x1b
+
+          class FakeIn:
+              def __init__(self, data):
+                  self.buffer = io.BytesIO(data)
+
+          class FakeOut:
+              def __init__(self):
+                  self.buffer = io.BytesIO()
+
+          def child_once(request_obj, github_side_effect):
+              stdin, stdout, stderr = sys.stdin, sys.stdout, sys.stderr
+              env = os.environ.copy()
+              fake_out, fake_err = FakeOut(), io.StringIO()
+              try:
+                  os.environ.clear()
+                  os.environ.update(x1b.network_child_env())
+                  sys.stdin = FakeIn(x1b.canonical_json_bytes(request_obj))
+                  sys.stdout = fake_out
+                  sys.stderr = fake_err
+                  with mock.patch.object(x1b, "_github_get", side_effect=github_side_effect):
+                      rc = x1b._network_child()
+                  return rc, fake_out.buffer.getvalue(), fake_err.getvalue()
+              finally:
+                  sys.stdin, sys.stdout, sys.stderr = stdin, stdout, stderr
+                  os.environ.clear()
+                  os.environ.update(env)
+
+          case = X1BTests()
+          case.setUp()
+          try:
+              request_obj = {"schema_version": x1b.CHILD_REQUEST_SCHEMA, "decision_pr": 77}
+              reviews = case.reviews()
+              req_path = f"decisions/x1b/requests/{case.digest}/request.json"
+              scene_path = f"decisions/x1b/requests/{case.digest}/accepted-scene.fountain"
+
+              def content(path, data):
+                  return json.dumps({
+                      "type": "file",
+                      "path": path,
+                      "encoding": "base64",
+                      "content": base64.b64encode(data).decode("ascii"),
+                  }, separators=(",", ":")).encode()
+
+              # CUR2: rel=next is completeness ambiguity and must deny.
+              rc, _, _ = child_once(
+                  request_obj,
+                  [(reviews, {"link": '<https://api.github.com/next>; rel="next"'})],
+              )
+              assert rc == 2
+
+              # CUR12 / TLS12: network failure after review selection, before immutable H files.
+              rc, _, _ = child_once(
+                  request_obj,
+                  [(reviews, {}), x1b.X1BError("injected immutable-H network failure")],
+              )
+              assert rc == 2
+              assert case.git.require_direct_main(case.local.base_head) == case.local.base_head
+              assert not (case.root / ".scriptops" / "decision-log.ndjson").exists()
+
+              # TLS6: parent-to-child request has an exact schema; URL/CA overrides are denied.
+              rc, _, _ = child_once(
+                  {"schema_version": x1b.CHILD_REQUEST_SCHEMA, "decision_pr": 77, "url": "https://attacker.invalid", "cafile": "/tmp/a.pem"},
+                  AssertionError("network reached for invalid child request"),
+              )
+              assert rc == 2
+
+              # TLS1-5 + TLS7-10: exact fresh environment and OS-default verified context.
+              assert x1b.network_child_env() == {"X1B_NETWORK_CHILD": "1"}
+              for forbidden in (
+                  "SSL_CERT_FILE", "SSL_CERT_DIR", "OPENSSL_CONF", "OPENSSL_MODULES",
+                  "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE", "PYTHONPATH", "PYTHONHOME",
+                  "TOTALLY_UNKNOWN_ATTACKER_KEY",
+              ):
+                  assert forbidden not in x1b.network_child_env()
+
+              rc, raw, err = child_once(
+                  request_obj,
+                  [
+                      (reviews, {}),
+                      (content(req_path, case.request_bytes), {}),
+                      (content(scene_path, case.local.accepted_scene_bytes), {}),
+                  ],
+              )
+              assert rc == 0, err
+              result = x1b.parse_json_strict(raw)
+              tls = result["tls_observation"]
+              assert tls["check_hostname"] is True
+              assert tls["verify_mode"] == int(x1b.ssl.CERT_REQUIRED)
+              assert tls["minimum_version"] >= int(x1b.ssl.TLSVersion.TLSv1_2)
+              assert tls["cert_store_stats"]["x509_ca"] > 0
+              assert tls["environment_keys"] == ["X1B_NETWORK_CHILD"]
+
+              # TLS13: parent independently rejects extra/missing/tampered child evidence.
+              x1b.admission_from_child_result(case.local, 77, result)
+              extra = dict(result)
+              extra["attacker_extra"] = True
+              try:
+                  x1b.admission_from_child_result(case.local, 77, extra)
+              except x1b.X1BError:
+                  pass
+              else:
+                  raise AssertionError("TLS13 extra child field accepted")
+              missing = dict(result)
+              missing.pop("request_sha256")
+              try:
+                  x1b.admission_from_child_result(case.local, 77, missing)
+              except x1b.X1BError:
+                  pass
+              else:
+                  raise AssertionError("TLS13 missing child field accepted")
+              tampered = dict(result)
+              tampered["human_review_numeric_id"] += 1
+              try:
+                  x1b.admission_from_child_result(case.local, 77, tampered)
+              except x1b.X1BError:
+                  pass
+              else:
+                  raise AssertionError("TLS13 tampered child self-report accepted")
+
+              # TLS14: authority HTTP implementation is confined to the child helper;
+              # fixed request headers contain no credential-bearing header.
+              github_src = inspect.getsource(x1b._github_get)
+              approve_src = inspect.getsource(x1b.approve_scene)
+              assert "Authorization" not in github_src and "Cookie" not in github_src
+              assert "_github_get" not in approve_src and "http.client" not in approve_src
+
+              # TLS15: each reader call spawns a fresh child; no prior result cache is reused.
+              calls = []
+              def fake_run(*args, **kwargs):
+                  calls.append(kwargs.copy())
+                  return subprocess.CompletedProcess(args[0], 0, b"{}", b"")
+              with mock.patch.object(x1b.subprocess, "run", side_effect=fake_run):
+                  x1b.run_network_child(77)
+                  x1b.run_network_child(77)
+              assert len(calls) == 2
+              assert all(call["env"] == {"X1B_NETWORK_CHILD": "1"} for call in calls)
+              assert all(call["input"] == x1b.canonical_json_bytes(request_obj) for call in calls)
+          finally:
+              case.tearDown()
+          print("X1B-CUR2/CUR12 + TLS1..TLS10/TLS12..TLS15 deterministic fuse = PASS; TLS11 live = PR #165")
+          PY
+      - name: X1B deterministic tests
+        run: python -m unittest -v tests.test_x1b_human_decision tests.test_phase6_scriptops_smoke
+      - name: Repository self-verification
+        run: python scripts/verify_repository.py
+      - name: Historical reconstruction integrity only
+        run: python scripts/restore_v2.py --check-only
