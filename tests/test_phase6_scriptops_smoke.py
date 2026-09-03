@@ -35,20 +35,6 @@ def compute_sha256(text: str) -> str:
     return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def scene_hash_from_text(text: str) -> tuple[str, str]:
-    parts = text.split("---", 2)
-    if len(parts) < 3:
-        raise AssertionError("scene has no front matter")
-    fm = yaml.safe_load(parts[1])
-    body = parts[2]
-    declared = fm["hash"]
-    fm_no_hash = {k: v for k, v in fm.items() if k != "hash"}
-    canonical = yaml.dump(
-        fm_no_hash, sort_keys=False, allow_unicode=True, default_flow_style=False
-    ) + body
-    return declared, compute_sha256(canonical)
-
-
 class Phase6SmokeTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
@@ -79,11 +65,7 @@ class Phase6SmokeTests(unittest.TestCase):
         task_id = match.group(0)
         self.assertEqual(git(self.root, self.env, "status", "--porcelain"), "")
 
-        run(
-            [sys.executable, str(HARDENED), "check-pre", "--task", task_id],
-            self.root,
-            self.env,
-        )
+        run([sys.executable, str(HARDENED), "check-pre", "--task", task_id], self.root, self.env)
         self.assertEqual(git(self.root, self.env, "status", "--porcelain"), "")
 
         run(
@@ -124,15 +106,10 @@ class Phase6SmokeTests(unittest.TestCase):
         path.write_text(text, encoding="utf-8")
         return path
 
-    def test_full_controlled_happy_path(self) -> None:
+    def test_controlled_path_stops_at_review_required_without_human_evidence(self) -> None:
         task_id = self._review_to_context()
         self._write_candidate(task_id)
-
-        run(
-            [sys.executable, str(HARDENED), "check-post", "--task", task_id],
-            self.root,
-            self.env,
-        )
+        run([sys.executable, str(HARDENED), "check-post", "--task", task_id], self.root, self.env)
         self.assertEqual(git(self.root, self.env, "status", "--porcelain"), "")
 
         impact_path = self.root / "tasks" / task_id / "impact-report.json"
@@ -140,49 +117,13 @@ class Phase6SmokeTests(unittest.TestCase):
         self.assertEqual(impact["status"], "REVIEW_REQUIRED")
         self.assertTrue(impact["requires_human_decision"])
         self.assertFalse(impact["proposed_effect"]["canonical_target_changed"])
-
-        why = "Phase 6 smoke: świadoma akceptacja dokładnie tego kandydata"
-        run(
-            [
-                sys.executable,
-                str(HARDENED),
-                "approve",
-                "--scene",
-                "SCN-001",
-                "--why",
-                why,
-            ],
-            self.root,
-            self.env,
+        self.assertEqual(
+            impact["human_authority_route"],
+            "X1B-HUMAN-DECISION-V2 GitHub pull-request review",
         )
-        self.assertEqual(git(self.root, self.env, "status", "--porcelain"), "")
+        self.assertFalse((self.root / ".scriptops" / "decision-log.ndjson").exists())
 
-        accepted = self.root / "scenes" / "SCN-001.fountain"
-        declared, computed = scene_hash_from_text(accepted.read_text(encoding="utf-8"))
-        self.assertEqual(declared, computed, "accepted scene hash must describe accepted content")
-
-        decisions = [
-            json.loads(line)
-            for line in (self.root / ".scriptops" / "decision-log.ndjson")
-            .read_text(encoding="utf-8")
-            .splitlines()
-            if line.strip()
-        ]
-        decision = decisions[-1]
-        self.assertEqual(decision["why"], why)
-        self.assertEqual(decision["scene_hash"], declared)
-        self.assertEqual(decision["task_id"], task_id)
-        self.assertEqual(decision["impact_report"], f"tasks/{task_id}/impact-report.json")
-
-        log = git(self.root, self.env, "log", "--oneline", "--all")
-        self.assertIn("scriptops phase6: checkpoint task", log)
-        self.assertIn("scriptops phase6: record preflight", log)
-        self.assertIn("scriptops phase6: record context", log)
-        self.assertIn("scriptops phase6: record candidate input", log)
-        self.assertIn("scriptops phase6: record impact", log)
-        self.assertIn("scriptops phase6: accept SCN-001", log)
-
-    def test_approve_requires_explicit_why(self) -> None:
+    def test_approve_without_decision_pr_is_rejected(self) -> None:
         result = run(
             [sys.executable, str(HARDENED), "approve", "--scene", "SCN-001"],
             self.root,
@@ -190,13 +131,32 @@ class Phase6SmokeTests(unittest.TestCase):
             ok=False,
         )
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("--why", result.stderr)
+        self.assertIn("--decision-pr", result.stderr)
+
+    def test_old_why_is_not_an_approval_credential(self) -> None:
+        result = run(
+            [
+                sys.executable,
+                str(HARDENED),
+                "approve",
+                "--scene",
+                "SCN-001",
+                "--decision-pr",
+                "1",
+                "--why",
+                "AI supplied text",
+            ],
+            self.root,
+            self.env,
+            ok=False,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("unrecognized arguments", result.stderr)
 
     def test_candidate_import_refuses_unrelated_dirty_state(self) -> None:
         task_id = self._review_to_context()
         self._write_candidate(task_id)
         (self.root / "UNRELATED.txt").write_text("must block\n", encoding="utf-8")
-
         result = run(
             [sys.executable, str(HARDENED), "check-post", "--task", task_id],
             self.root,
