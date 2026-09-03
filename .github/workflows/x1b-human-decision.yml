@@ -1,0 +1,57 @@
+name: x1b-human-decision
+
+on:
+  push:
+    paths:
+      - 'phase6/x1b_human_decision.py'
+      - 'phase6/scriptops-v2-hardening.py'
+      - 'legacy/scriptops-v2-single.py'
+      - 'scripts/restore_v2.py'
+      - 'scripts/verify_repository.py'
+      - 'tests/test_x1b_human_decision.py'
+      - 'tests/test_phase6_scriptops_smoke.py'
+      - '.github/workflows/x1b-human-decision.yml'
+      - 'README.md'
+      - 'PROJECT_STATE.md'
+      - 'HANDOFF.md'
+      - 'SOURCE_MANIFEST.md'
+      - 'sources/prototype/RESTORE.md'
+  pull_request:
+    paths:
+      - 'phase6/x1b_human_decision.py'
+      - 'phase6/scriptops-v2-hardening.py'
+      - 'legacy/scriptops-v2-single.py'
+      - 'scripts/restore_v2.py'
+      - 'scripts/verify_repository.py'
+      - 'tests/test_x1b_human_decision.py'
+      - 'tests/test_phase6_scriptops_smoke.py'
+      - '.github/workflows/x1b-human-decision.yml'
+      - 'README.md'
+      - 'PROJECT_STATE.md'
+      - 'HANDOFF.md'
+      - 'SOURCE_MANIFEST.md'
+      - 'sources/prototype/RESTORE.md'
+
+permissions:
+  contents: read
+
+jobs:
+  x1b-v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install active ScriptOps dependency
+        run: python -m pip install --disable-pip-version-check pyyaml
+      - name: X1B deterministic tests
+        run: python -m unittest -v tests.test_x1b_human_decision tests.test_phase6_scriptops_smoke
+      - name: Repository self-verification
+        run: python scripts/verify_repository.py
+      - name: Historical reconstruction integrity only
+        run: python scripts/restore_v2.py --check-only
