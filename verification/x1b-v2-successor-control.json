@@ -1,8 +1,8 @@
 {
   "schema_version": "x1b-v2-successor-control/v1",
-  "armed": false,
-  "decision_pr": 0,
-  "expected_request_sha256": "",
-  "expected_evidence_head": "",
-  "expected_review_numeric_id": 0
+  "armed": true,
+  "decision_pr": 177,
+  "expected_request_sha256": "ceb0f11a527b99629d172e353e2f41f49faf874cb9a1795f166fe4e93b4486d2",
+  "expected_evidence_head": "bbd013160f9ef5e464855aaa317f57aa1591145a",
+  "expected_review_numeric_id": 5117204074
 }
