@@ -1,0 +1,8 @@
+{
+  "schema_version": "x1b-v2-successor-control/v1",
+  "armed": false,
+  "decision_pr": 0,
+  "expected_request_sha256": "",
+  "expected_evidence_head": "",
+  "expected_review_numeric_id": 0
+}
