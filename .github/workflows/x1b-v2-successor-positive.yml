@@ -1,0 +1,453 @@
+name: x1b-v2-successor-positive
+
+on:
+  pull_request:
+    types: [synchronize]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: x1b-v2-successor-positive-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  successor-positive:
+    if: >-
+      github.head_ref == 'verification/x1b-v2-actions-successor-20260904' &&
+      github.base_ref == 'impl/x1b-human-decision-v2-20260903' &&
+      github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout verification harness without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+
+      - name: Validate one-shot control and runner authority profile
+        id: control
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVIDENCE="$RUNNER_TEMP/x1b-evidence"
+          mkdir -p "$EVIDENCE"
+
+          python - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          path = Path("verification/x1b-v2-successor-control.json")
+          value = json.loads(path.read_text(encoding="utf-8"))
+          expected = {
+              "schema_version",
+              "armed",
+              "decision_pr",
+              "expected_request_sha256",
+              "expected_evidence_head",
+              "expected_review_numeric_id",
+          }
+          assert set(value) == expected
+          assert value["schema_version"] == "x1b-v2-successor-control/v1"
+          assert value["armed"] is True
+          assert isinstance(value["decision_pr"], int) and value["decision_pr"] > 0
+          assert re.fullmatch(r"[0-9a-f]{64}", value["expected_request_sha256"])
+          assert re.fullmatch(r"[0-9a-f]{40}", value["expected_evidence_head"])
+          assert isinstance(value["expected_review_numeric_id"], int) and value["expected_review_numeric_id"] > 0
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f"decision_pr={value['decision_pr']}\n")
+              fh.write(f"request_sha256={value['expected_request_sha256']}\n")
+              fh.write(f"evidence_head={value['expected_evidence_head']}\n")
+              fh.write(f"review_id={value['expected_review_numeric_id']}\n")
+          PY
+
+          if git config --local --get-regexp '^http\..*\.extraheader$' >"$EVIDENCE/git-extraheader.txt" 2>&1; then
+            echo "checkout retained an HTTP extraheader credential" >&2
+            exit 1
+          fi
+          : > "$EVIDENCE/git-extraheader.txt"
+
+          for key in \
+            GITHUB_TOKEN GH_TOKEN GITHUB_ENTERPRISE_TOKEN GH_ENTERPRISE_TOKEN \
+            HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy
+          do
+            if [ -n "${!key-}" ]; then
+              echo "forbidden effect-parent environment present: $key" >&2
+              exit 1
+            fi
+          done
+
+          command -v strace | tee "$EVIDENCE/strace-path.txt"
+          python --version 2>&1 | tee "$EVIDENCE/python-version.txt"
+          git --version | tee "$EVIDENCE/git-version.txt"
+          uname -a | tee "$EVIDENCE/uname.txt"
+
+          {
+            echo "github_repository=$GITHUB_REPOSITORY"
+            echo "github_run_id=$GITHUB_RUN_ID"
+            echo "github_run_attempt=$GITHUB_RUN_ATTEMPT"
+            echo "github_sha=$GITHUB_SHA"
+            echo "github_head_ref=$GITHUB_HEAD_REF"
+            echo "github_base_ref=$GITHUB_BASE_REF"
+            echo "permissions_contents=read"
+            echo "checkout_persist_credentials=false"
+            echo "checkout_action=11d5960a326750d5838078e36cf38b85af677262"
+            echo "setup_python_action=a26af69be951a213d495a4c3e4e4022e16d87065"
+            echo "upload_artifact_action=ea165f8d65b6e75b540449e92b4886f43607fa02"
+          } > "$EVIDENCE/runner-identity.txt"
+
+      - name: Construct isolated exact-B0 ScriptOps repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          I=7c40a92165714023743e91c63b5b11b102fadd92
+          B0=e325d3e6a347d684ec0b751bdb83098de6bdf87e
+          B0_REF=refs/remotes/origin/verification/x1b-v2-positive-b0-20260903
+          EVIDENCE="$RUNNER_TEMP/x1b-evidence"
+          RUN_ROOT="$RUNNER_TEMP/x1b-run"
+
+          test "$(git rev-parse "$B0_REF")" = "$B0"
+          test "$(git rev-parse "$B0^")" = "$I"
+
+          printf '%s\n' \
+            scenes/SCN-999.fountain \
+            staging/scenes/SCN-999-v2-candidate.fountain \
+            tasks/TASK-X1B-POSITIVE-001/impact-report.json \
+            | sort > "$EVIDENCE/expected-fixture-paths.txt"
+          git diff --name-only "$I" "$B0" | sort > "$EVIDENCE/actual-fixture-paths.txt"
+          diff -u "$EVIDENCE/expected-fixture-paths.txt" "$EVIDENCE/actual-fixture-paths.txt"
+
+          rm -rf "$RUN_ROOT"
+          git init -q "$RUN_ROOT"
+          git -C "$RUN_ROOT" fetch -q --no-tags "$GITHUB_WORKSPACE" "$B0_REF:refs/heads/main"
+          git -C "$RUN_ROOT" checkout -q main
+
+          test "$(git -C "$RUN_ROOT" symbolic-ref HEAD)" = refs/heads/main
+          test "$(git -C "$RUN_ROOT" rev-parse refs/heads/main)" = "$B0"
+          test "$(git -C "$RUN_ROOT" rev-parse HEAD^)" = "$I"
+          test -z "$(git -C "$RUN_ROOT" status --porcelain=v1 --untracked-files=all)"
+          test -z "$(git -C "$RUN_ROOT" for-each-ref --format='%(refname)' refs/replace)"
+
+          {
+            echo "I=$I"
+            echo "B0=$B0"
+            echo "B0_TREE=$(git -C "$RUN_ROOT" rev-parse "$B0^{tree}")"
+            echo "B0_PARENT=$(git -C "$RUN_ROOT" rev-parse "$B0^")"
+            echo "HEAD=$(git -C "$RUN_ROOT" rev-parse HEAD)"
+            echo "HEAD_SYMBOLIC=$(git -C "$RUN_ROOT" symbolic-ref HEAD)"
+          } > "$EVIDENCE/anchors.txt"
+
+          sha256sum \
+            "$RUN_ROOT/scenes/SCN-999.fountain" \
+            "$RUN_ROOT/staging/scenes/SCN-999-v2-candidate.fountain" \
+            "$RUN_ROOT/tasks/TASK-X1B-POSITIVE-001/impact-report.json" \
+            > "$EVIDENCE/fixture-sha256.txt"
+
+      - name: Install active ScriptOps dependency
+        shell: bash
+        run: python -m pip install --disable-pip-version-check 'pyyaml==6.0.3'
+
+      - name: Fresh complete deterministic X1B matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/x1b-run"
+          EVIDENCE="$RUNNER_TEMP/x1b-evidence"
+
+          python -m unittest -v \
+            tests.test_x1b_human_decision \
+            tests.test_phase6_scriptops_smoke \
+            2>&1 | tee "$EVIDENCE/negative-unittest.txt"
+
+          python scripts/verify_repository.py \
+            2>&1 | tee "$EVIDENCE/verify-repository.txt"
+
+          python scripts/restore_v2.py --check-only \
+            2>&1 | tee "$EVIDENCE/restore-check-only.txt"
+
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(git rev-parse refs/heads/main)" = e325d3e6a347d684ec0b751bdb83098de6bdf87e
+
+      - name: Fresh post-Human authority and admission preflight
+        shell: bash
+        env:
+          DECISION_PR: ${{ steps.control.outputs.decision_pr }}
+          EXPECTED_D: ${{ steps.control.outputs.request_sha256 }}
+          EXPECTED_H: ${{ steps.control.outputs.evidence_head }}
+          EXPECTED_REVIEW_ID: ${{ steps.control.outputs.review_id }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/x1b-run"
+          EVIDENCE="$RUNNER_TEMP/x1b-evidence"
+
+          for key in \
+            GITHUB_TOKEN GH_TOKEN GITHUB_ENTERPRISE_TOKEN GH_ENTERPRISE_TOKEN \
+            HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy
+          do
+            test -z "${!key-}"
+          done
+
+          PYTHONPATH=phase6 python - <<'PY' 2>&1 | tee "$EVIDENCE/preflight-output.txt"
+          from pathlib import Path
+          import base64
+          import hashlib
+          import os
+          import x1b_human_decision as x1b
+
+          B0 = "e325d3e6a347d684ec0b751bdb83098de6bdf87e"
+          D = os.environ["EXPECTED_D"]
+          H = os.environ["EXPECTED_H"]
+          RID = int(os.environ["EXPECTED_REVIEW_ID"])
+          PR = int(os.environ["DECISION_PR"])
+
+          git = x1b.AnchoredGitV2.discover(Path("."))
+          local = x1b.local_preflight(git, "SCN-999")
+          assert local.base_head == B0
+
+          result = x1b.run_network_child(PR)
+          admission, request = x1b.admission_from_child_result(local, PR, result)
+
+          assert result["human_github_user_id"] == 226907434
+          assert result["human_review_state"] == "APPROVED"
+          assert result["human_review_numeric_id"] == RID
+          assert result["human_review_commit_id"] == H
+          assert result["request_sha256"] == D
+          assert admission["request_sha256"] == D
+          assert admission["human_review_numeric_id"] == RID
+          assert admission["human_review_commit_id"] == H
+
+          out = Path(os.environ["RUNNER_TEMP"]) / "x1b-evidence"
+          files = {
+              "preflight-child-result.json": x1b.pretty_json_bytes(result),
+              "preflight-admission-canonical.json": x1b.canonical_json_bytes(admission),
+              "review-response.raw": base64.b64decode(result["review_response_raw_b64"]),
+              "request.json.raw": base64.b64decode(result["request_json_raw_b64"]),
+              "accepted-scene.fountain.raw": base64.b64decode(result["accepted_scene_raw_b64"]),
+              "human-review-body.raw": base64.b64decode(result["human_review_body_b64"]),
+          }
+          for name, data in files.items():
+              (out / name).write_bytes(data)
+
+          print("PREFLIGHT=PASS")
+          print("B0=" + local.base_head)
+          print("REVIEW_ID=" + str(RID))
+          print("HUMAN_USER_ID=" + str(result["human_github_user_id"]))
+          print("REVIEW_COMMIT_H=" + H)
+          print("REQUEST_SHA256=" + D)
+          print("ADMISSION_ID=" + admission["admission_id"])
+          print("ADMISSION_DIGEST=" + admission["admission_digest"])
+          for name, data in files.items():
+              print(name + "_SHA256=" + hashlib.sha256(data).hexdigest())
+          PY
+
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(git rev-parse refs/heads/main)" = e325d3e6a347d684ec0b751bdb83098de6bdf87e
+
+      - name: Execute one observed real positive-control effect
+        shell: bash
+        env:
+          DECISION_PR: ${{ steps.control.outputs.decision_pr }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/x1b-run"
+          EVIDENCE="$RUNNER_TEMP/x1b-evidence"
+
+          for key in \
+            GITHUB_TOKEN GH_TOKEN GITHUB_ENTERPRISE_TOKEN GH_ENTERPRISE_TOKEN \
+            HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy
+          do
+            test -z "${!key-}"
+          done
+
+          strace -f -s 4096 \
+            -e trace=process,flock,fcntl \
+            -o "$EVIDENCE/effect.strace" \
+            python phase6/scriptops-v2-hardening.py approve \
+              --scene SCN-999 \
+              --decision-pr "$DECISION_PR" \
+            2>&1 | tee "$EVIDENCE/effect-output.txt"
+
+          rc=${PIPESTATUS[0]}
+          echo "$rc" > "$EVIDENCE/effect-rc.txt"
+          test "$rc" -eq 0
+          grep -F '[X1B] HumanDecision=TRUE' "$EVIDENCE/effect-output.txt"
+
+      - name: Verify post-CAS truth and strace
+        id: post
+        shell: bash
+        env:
+          EXPECTED_D: ${{ steps.control.outputs.request_sha256 }}
+          EXPECTED_H: ${{ steps.control.outputs.evidence_head }}
+          EXPECTED_REVIEW_ID: ${{ steps.control.outputs.review_id }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/x1b-run"
+          EVIDENCE="$RUNNER_TEMP/x1b-evidence"
+
+          PYTHONPATH=phase6 python - <<'PY' 2>&1 | tee "$EVIDENCE/postverify-output.txt"
+          from pathlib import Path
+          import hashlib
+          import os
+          import x1b_human_decision as x1b
+
+          B0 = "e325d3e6a347d684ec0b751bdb83098de6bdf87e"
+          D = os.environ["EXPECTED_D"]
+          H = os.environ["EXPECTED_H"]
+          RID = int(os.environ["EXPECTED_REVIEW_ID"])
+          out = Path(os.environ["RUNNER_TEMP"]) / "x1b-evidence"
+
+          git = x1b.AnchoredGitV2.discover(Path("."))
+          C = git.direct_main_head()
+          assert C != B0
+          assert git.text("rev-parse", f"{C}^") == B0
+
+          paths = sorted(git.text("diff-tree", "--no-commit-id", "--name-only", "-r", B0, C).splitlines())
+          assert paths == [".scriptops/decision-log.ndjson", "scenes/SCN-999.fountain"]
+
+          scene_mode, scene_oid = git.tree_entry(C, "scenes/SCN-999.fountain")
+          log_mode, log_oid = git.tree_entry(C, ".scriptops/decision-log.ndjson")
+          assert scene_mode == "100644"
+          assert log_mode == "100644"
+
+          scene = git.blob(scene_oid)
+          log = git.blob(log_oid)
+          expected_scene = (out / "accepted-scene.fountain.raw").read_bytes()
+          assert scene == expected_scene
+          assert Path("scenes/SCN-999.fountain").read_bytes() == scene
+          assert Path(".scriptops/decision-log.ndjson").read_bytes() == log
+
+          assert git.text("write-tree") == git.text("rev-parse", f"{C}^{{tree}}")
+          git.require_clean()
+
+          base_log = git.commit_file(B0, ".scriptops/decision-log.ndjson", allow_absent=True)
+          assert base_log == b""
+          lines = [line for line in log.splitlines() if line.strip()]
+          assert len(lines) == 1
+          record = x1b.parse_json_strict(lines[0])
+          admission = x1b.parse_json_strict((out / "preflight-admission-canonical.json").read_bytes())
+
+          assert record["schema_version"] == "scriptops-x1b-decision/v2"
+          assert record["status"] == "committed"
+          assert record["human_decision"] is True
+          assert record["human_github_user_id"] == 226907434
+          assert record["request_sha256"] == D
+          assert record["human_review_numeric_id"] == RID
+          assert record["human_review_commit_id"] == H
+          assert record["scriptops_base_head"] == B0
+          assert record["admission_id"] == admission["admission_id"]
+          assert record["admission_digest"] == admission["admission_digest"]
+          assert record["review_response_digest"] == admission["review_response_digest"]
+          assert record["human_review_set_digest"] == admission["human_review_set_digest"]
+          assert record["material_effect_digest"] == admission["material_effect_digest"]
+          assert record["accepted_scene_sha256"] == hashlib.sha256(scene).hexdigest()
+
+          commit_raw = git.run("cat-file", "-p", C).stdout
+          expected_identity = b"ScriptOps X1B Executor <scriptops-x1b@example.invalid>"
+          assert any(line.startswith(b"author " + expected_identity + b" ") for line in commit_raw.splitlines())
+          assert any(line.startswith(b"committer " + expected_identity + b" ") for line in commit_raw.splitlines())
+
+          (out / "C.txt").write_text(C + "\n", encoding="ascii")
+          (out / "C-tree.txt").write_text(git.text("rev-parse", f"{C}^{{tree}}") + "\n", encoding="ascii")
+          (out / "commit.raw.txt").write_bytes(commit_raw)
+          (out / "decision-record.json").write_bytes(x1b.pretty_json_bytes(record))
+          (out / "committed-scene.fountain").write_bytes(scene)
+          (out / "committed-decision-log.ndjson").write_bytes(log)
+          (out / "postverify.json").write_bytes(x1b.pretty_json_bytes({
+              "status": "PASS",
+              "B0": B0,
+              "C": C,
+              "parent": B0,
+              "changed_paths": paths,
+              "scene_mode": scene_mode,
+              "decision_log_mode": log_mode,
+              "scene_sha256": hashlib.sha256(scene).hexdigest(),
+              "decision_log_sha256": hashlib.sha256(log).hexdigest(),
+              "worktree_clean": True,
+              "index_tree_equals_commit_tree": True,
+              "human_decision": True,
+              "request_sha256": D,
+              "human_review_numeric_id": RID,
+              "human_review_commit_id": H,
+              "admission_id": record["admission_id"],
+              "admission_digest": record["admission_digest"],
+          }))
+
+          print("POSTVERIFY=PASS")
+          print("C=" + C)
+          print("PARENT=" + B0)
+          print("REQUEST_SHA256=" + D)
+          print("REVIEW_ID=" + str(RID))
+          print("REVIEW_COMMIT_H=" + H)
+          print("ADMISSION_ID=" + record["admission_id"])
+          print("ADMISSION_DIGEST=" + record["admission_digest"])
+          PY
+
+          C="$(cat "$EVIDENCE/C.txt")"
+          B0=e325d3e6a347d684ec0b751bdb83098de6bdf87e
+
+          grep -E 'flock\(.*LOCK_EX\|LOCK_NB.*= 0' "$EVIDENCE/effect.strace" > "$EVIDENCE/strace-lock-ex.txt"
+          grep -F -- '--_x1b-github-reader-child' "$EVIDENCE/effect.strace" > "$EVIDENCE/strace-child.txt"
+          grep -F -- '"commit-tree"' "$EVIDENCE/effect.strace" > "$EVIDENCE/strace-commit-tree.txt"
+          grep -F -- '"update-ref", "--no-deref", "refs/heads/main"' "$EVIDENCE/effect.strace" > "$EVIDENCE/strace-update-ref.txt"
+          grep -F -- "\"$C\"" "$EVIDENCE/strace-update-ref.txt"
+          grep -F -- "\"$B0\"" "$EVIDENCE/strace-update-ref.txt"
+          grep -E 'flock\(.*LOCK_UN.*= 0' "$EVIDENCE/effect.strace" > "$EVIDENCE/strace-lock-un.txt"
+
+          git ls-tree "$C" -- \
+            .scriptops/decision-log.ndjson \
+            scenes/SCN-999.fountain \
+            > "$EVIDENCE/ls-tree-effect-paths.txt"
+          git diff --name-only "$B0" "$C" > "$EVIDENCE/effect-changed-paths.txt"
+          git status --porcelain=v1 --untracked-files=all > "$EVIDENCE/post-status.txt"
+          test ! -s "$EVIDENCE/post-status.txt"
+
+          echo "C=$C" >> "$GITHUB_OUTPUT"
+
+      - name: Preserve bundle and prove remote main unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_ROOT="$RUNNER_TEMP/x1b-run"
+          EVIDENCE="$RUNNER_TEMP/x1b-evidence"
+
+          git -C "$RUN_ROOT" bundle create \
+            "$EVIDENCE/x1b-v2-successor.bundle" \
+            refs/heads/main
+
+          git -C "$RUN_ROOT" bundle verify \
+            "$EVIDENCE/x1b-v2-successor.bundle" \
+            2>&1 | tee "$EVIDENCE/bundle-verify.txt"
+
+          GIT_TERMINAL_PROMPT=0 \
+            git ls-remote https://github.com/FJ899/scriptops.git refs/heads/main \
+            | tee "$EVIDENCE/remote-main-after.txt"
+
+          test "$(cut -f1 "$EVIDENCE/remote-main-after.txt")" = \
+            2f22843ac570498b506101addeba5453ab777f08
+
+          (
+            cd "$EVIDENCE"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | sort -z \
+              | xargs -0 sha256sum \
+              > SHA256SUMS
+          )
+
+      - name: Upload durable successor evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: x1b-v2-successor-positive-${{ github.run_id }}
+          path: ${{ runner.temp }}/x1b-evidence
+          if-no-files-found: error
+          retention-days: 90

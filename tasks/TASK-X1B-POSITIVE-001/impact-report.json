@@ -1,0 +1,11 @@
+{
+  "schema_version": "scriptops-phase6-impact/0.2-x1b",
+  "task_id": "TASK-X1B-POSITIVE-001",
+  "scene_id": "SCN-999",
+  "status": "REVIEW_REQUIRED",
+  "candidate": {
+    "path": "staging/scenes/SCN-999-v2-candidate.fountain",
+    "file_sha256": "sha256:40994d827b4865bef251b2fa7028a5d1d173517546b684ce15aa6340f24c315c"
+  },
+  "requires_human_decision": true
+}

@@ -1,0 +1,11 @@
+---
+scene_id: SCN-999
+version: 2
+status: candidate
+title: X1B corrective verification candidate
+act: 1
+hash: sha256:47793776893dc16daf23bd31b1614c204467f5c8706a1aefaf2a72a39120e00a
+---
+INT. X1B VERIFICATION ROOM - DAY
+
+HUMAN-REVIEWED POSITIVE CONTROL.
